@@ -11,6 +11,11 @@ app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 
+app.get('/client.js', function(req, res){
+	res.sendFile(__dirname + '/client.js');
+  });
+  
+
 io.on('connection', function(socket){
   socket.on('wow', function(msg){
     console.log('User clicked!');
@@ -46,7 +51,6 @@ http.listen(c.port, function(){
 function giveRoomInfo() {
 	for(var i = 0; i < rooms.length; i++) {
 		if(rooms[i].active) {
-			console.log('Info emitted to room ' + i);
 			io.to(i).emit('giveRoomInfo', rooms[i].players);
 		};
 	};
@@ -55,7 +59,6 @@ function giveRoomInfo() {
 function giveFullInfo() {
 	for(var i = 0; i < rooms.length; i++) {
 		if(rooms[i].active) {
-			console.log('Full Info emitted to room ' + i);
 			io.to(i).emit('giveFullInfo', rooms[i].lines);
 		};
 	};
