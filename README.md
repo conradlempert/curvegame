@@ -4,6 +4,8 @@
 
 This is a multiplayer game about surviving the longest as a snake.
 
+It is written in JavaScript with an express server and socket.io.
+
 ## Run the server
 
 Run this in the root folder of the repository:
