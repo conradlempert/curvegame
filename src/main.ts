@@ -10,7 +10,7 @@ import {
 } from "./game/room";
 import Config from "../config";
 
-const socket: Socket = io(":" + Config.serverPort);
+const socket: Socket = io();
 let status: number = 0;
 let roomInfo: IRoomsOverviewInfo;
 let keys: boolean[] = [];
