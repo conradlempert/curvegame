@@ -1,11 +1,11 @@
 import express, { Request, Response } from "express";
 var app = express();
-var http = require("http").Server(app);
 import { Server } from "socket.io";
 import Config from "./config";
 import Room from "./room";
 
-var rooms: Array<Room>;
+const rooms: Room[] = [];
+const io = new Server();
 
 initializeRooms();
 setInterval(function () {
