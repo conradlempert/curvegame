@@ -1,11 +1,16 @@
 import express, { Request, Response } from "express";
-var app = express();
 import { Server } from "socket.io";
 import Config from "./config";
 import Room from "./room";
 
+const app = express();
 const rooms: Room[] = [];
-const io = new Server();
+const server = app.listen(Config.port, serverStarted);
+const io = new Server(server);
+
+function serverStarted(): void {
+  console.log("Server started on port " + Config.port);
+}
 
 initializeRooms();
 setInterval(function () {
@@ -32,7 +37,7 @@ io.on("connection", function (socket): void {
     socket.emit("resInfo", roomInfo);
   });
   socket.on("joinRoom", function (msg) {
-    socket.join(msg.rn);
+    socket.join("room" + msg.rn);
     rooms[msg.rn].players.push(msg.pobj);
     rooms[msg.rn].lines.push(new Array());
     console.log("A player joined Room " + msg.rn);
@@ -49,10 +54,6 @@ io.on("connection", function (socket): void {
     rooms[msg.room].players[msg.localID].steering = msg.steering;
     rooms[msg.room].lines[msg.localID].push([msg.x, msg.y]);
   });
-});
-
-app.listen(Config.port, function () {
-  console.log("listening on *:" + Config.port);
 });
 
 function giveRoomInfo(): void {
