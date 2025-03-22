@@ -6,7 +6,7 @@ import Room from "./room";
 const app = express();
 const rooms: Room[] = [];
 const server = app.listen(Config.port, serverStarted);
-const io = new Server(server);
+const io = new Server(server, { cors: { origin: "*" } });
 
 function serverStarted(): void {
   console.log("Server started on port " + Config.port);
@@ -20,15 +20,8 @@ setInterval(function () {
   giveFullInfo();
 }, 500);
 
-app.get("/", function (req: Request, res: Response): void {
-  res.sendFile(__dirname + "/index.html");
-});
-
-app.get("/client.js", function (req: Request, res: Response): void {
-  res.sendFile(__dirname + "/client.js");
-});
-
 io.on("connection", function (socket): void {
+  console.log("A player connected");
   socket.on("reqInfo", function (): void {
     var roomInfo = new Array();
     for (var i = 0; i < rooms.length; i++) {
