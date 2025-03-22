@@ -1,23 +1,29 @@
 import "./style.css";
 import { io, Socket } from "socket.io-client";
+import Player, { ILine, IPlayerPositionUpdate } from "./game/player";
+import {
+  IFullRoomInfo,
+  IJoinedRoomSuccessInfo,
+  IJoinRoomInfo,
+  IRoomsOverviewInfo,
+  IShortRoomInfo,
+} from "./game/room";
+import Config from "../config";
 
-const socket: Socket = io(":3000");
+const socket: Socket = io(":" + Config.serverPort);
 let status: number = 0;
-let roomInfo = new Array();
-let keys = new Array();
-const turningSpeed: number = 0.05;
-const drivingSpeed: number = 2;
-let lPD = new Array();
-let lPL = new Array();
-let player1;
+let roomInfo: IRoomsOverviewInfo;
+let keys: boolean[] = [];
+let lPD: Player[] = [];
+let lPL: ILine[] = [];
+let player1: Player;
 let context: CanvasRenderingContext2D;
-let room;
-let localID;
+let room: number;
+let localID: number;
 
 function initCanvas() {
-  console.log(socket);
   var canvas = document.getElementById("canvas1") as HTMLCanvasElement;
-  canvas.addEventListener("click", Click);
+  canvas.addEventListener("click", click);
   socket.emit("reqInfo", "");
   context = canvas.getContext("2d")!;
   headLineText("Curve Game", "black");
@@ -28,38 +34,27 @@ for (var i = 0; i < 200; i++) {
   keys[i] = false;
 }
 
-function Player() {
-  this.active = false;
-  this.x = Math.floor(Math.random() * 500);
-  this.y = Math.floor(Math.random() * 500);
-  this.angle = Math.random() * 2 * Math.PI;
-  this.steering = 0;
+function vFA(a: number): [number, number] {
+  return [Math.cos(a), Math.sin(a)];
 }
-function vFA(a) {
-  var vec = new Array();
-  vec[0] = Math.cos(a);
-  vec[1] = Math.sin(a);
-  return vec;
-}
-function Click(e) {
-  var mouseX, mouseY;
+function click(e: MouseEvent): void {
+  let mouseX: number, mouseY: number;
 
   if (e.offsetX) {
     mouseX = e.offsetX;
     mouseY = e.offsetY;
-  } else if (e.layerX) {
+  } else {
     mouseX = e.layerX;
     mouseY = e.layerY;
   }
 
-  socket.emit("wow", "");
-
   if (status == 1) {
-    var cc = getGridClick(mouseX, mouseY, roomInfo.length);
+    const roomNumber = getGridClick(mouseX, mouseY, roomInfo.length);
 
-    if (cc != -1) {
+    if (roomNumber != -1) {
       player1 = new Player();
-      socket.emit("joinRoom", { rn: cc, pobj: player1 });
+      const roomJoinInfo: IJoinRoomInfo = { rn: roomNumber, pobj: player1 };
+      socket.emit("joinRoom", roomJoinInfo);
     }
   }
 }
@@ -71,13 +66,13 @@ socket.on("connect_error", (err) => {
   console.log(err.message);
 });
 
-socket.on("resInfo", function (msg) {
+socket.on("resInfo", function (msg: IRoomsOverviewInfo): void {
   roomInfo = msg;
-  drawGrid(roomInfo);
+  drawGrid(roomInfo.map((x) => x.toString()));
   status = 1;
 });
 
-function headLineText(txt, color) {
+function headLineText(txt: string, color: string): void {
   context.fillStyle = color;
   context.font = "bold 50px sans-serif";
   context.textAlign = "center";
@@ -85,7 +80,7 @@ function headLineText(txt, color) {
   context.fillText(txt, 250, 75);
 }
 
-function smallText(txt, color) {
+function smallText(txt: string, color: string): void {
   context.fillStyle = color;
   context.font = "bold 30px sans-serif";
   context.textAlign = "center";
@@ -93,7 +88,7 @@ function smallText(txt, color) {
   context.fillText(txt, 250, 300);
 }
 
-function drawGrid(txtArray) {
+function drawGrid(txtArray: string[]): void {
   context.clearRect(0, 100, 500, 400);
   context.font = "bold 20px sans-serif";
   context.textAlign = "center";
@@ -106,7 +101,7 @@ function drawGrid(txtArray) {
   }
 }
 
-function getGridClick(x, y, arrayLength) {
+function getGridClick(x: number, y: number, arrayLength: number): number {
   for (var i = 0; i < arrayLength; i++) {
     var ox = (i % 4) * 125 + 25;
     var oy = Math.floor(i / 4) * 125 + 125;
@@ -117,32 +112,33 @@ function getGridClick(x, y, arrayLength) {
   return -1;
 }
 
-socket.on("joinRoomSuccess", function (msg) {
+socket.on("joinRoomSuccess", function (msg: IJoinedRoomSuccessInfo): void {
   status = 2;
   room = msg.room;
   localID = msg.localID;
+  console.log("localID: " + localID);
   goInGame();
 });
-function goInGame() {
+function goInGame(): void {
   context.clearRect(0, 0, 500, 500);
   window.setInterval(function () {
     tick();
   }, 20);
 }
 
-function tick() {
+function tick(): void {
   context.clearRect(0, 0, 500, 500);
   player1.steering = 0;
   if (keys[37]) {
-    player1.angle -= turningSpeed;
+    player1.angle -= Config.turningSpeed;
     player1.steering = -1;
   }
   if (keys[39]) {
-    player1.angle += turningSpeed;
+    player1.angle += Config.turningSpeed;
     player1.steering = 1;
   }
-  player1.x += vFA(player1.angle)[0] * 2;
-  player1.y += vFA(player1.angle)[1] * 2;
+  player1.x += vFA(player1.angle)[0] * Config.drivingSpeed;
+  player1.y += vFA(player1.angle)[1] * Config.drivingSpeed;
   lPL[localID].push([player1.x, player1.y]);
   context.fillStyle = "black";
   context.fillRect(player1.x, player1.y, 5, 5);
@@ -163,17 +159,18 @@ function tick() {
       computeOtherPlayer(i);
     }
   }
-  socket.emit("playerPositionUpdate", {
+  const playerPositionUpdate: IPlayerPositionUpdate = {
     room: room,
     localID: localID,
     x: player1.x,
     y: player1.y,
     angle: player1.angle,
     steering: player1.steering,
-  });
+  };
+  socket.emit("playerPositionUpdate", playerPositionUpdate);
 }
 
-socket.on("giveRoomInfo", function (serverPlayers) {
+socket.on("giveRoomInfo", function (serverPlayers: IShortRoomInfo): void {
   for (var i = 0; i < serverPlayers.length; i++) {
     if (i != localID) {
       lPD[i] = serverPlayers[i];
@@ -181,31 +178,31 @@ socket.on("giveRoomInfo", function (serverPlayers) {
   }
 });
 
-socket.on("giveFullInfo", function (serverLines) {
+socket.on("giveFullInfo", function (serverLines: IFullRoomInfo): void {
   for (var i = 0; i < serverLines.length; i++) {
     lPL[i] = serverLines[i];
   }
 });
 
-function computeOtherPlayer(nr) {
+function computeOtherPlayer(nr: number): void {
   if (lPD[nr].steering == 1) {
-    lPD[nr].angle += turningSpeed;
+    lPD[nr].angle += Config.turningSpeed;
   }
   if (lPD[nr].steering == -1) {
-    lPD[nr].angle -= turningSpeed;
+    lPD[nr].angle -= Config.turningSpeed;
   }
 
-  lPD[nr].x += vFA(lPD[nr].angle)[0] * 2;
-  lPD[nr].y += vFA(lPD[nr].angle)[1] * 2;
+  lPD[nr].x += vFA(lPD[nr].angle)[0] * Config.drivingSpeed;
+  lPD[nr].y += vFA(lPD[nr].angle)[1] * Config.drivingSpeed;
   lPL[nr].push([lPD[nr].x, lPD[nr].y]);
 
   context.fillStyle = "red";
   context.fillRect(lPD[nr].x, lPD[nr].y, 5, 5);
 }
 
-document.body.onkeydown = function (event) {
+document.body.onkeydown = function (event: KeyboardEvent): void {
   keys[event.keyCode] = true;
 };
-document.body.onkeyup = function (event) {
+document.body.onkeyup = function (event: KeyboardEvent): void {
   keys[event.keyCode] = false;
 };

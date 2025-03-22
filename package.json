@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "NODE_ENV=development npx tsx watch server.ts & vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "prod": "NODE_ENV=production npx tsx server.ts"
   },
   "dependencies": {
     "express": "4.21.2",

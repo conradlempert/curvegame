@@ -1,16 +1,49 @@
 import express, { Request, Response } from "express";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import Config from "./config";
-import Room from "./room";
+import Room, {
+  IFullRoomInfo,
+  IJoinedRoomSuccessInfo,
+  IJoinRoomInfo,
+  IRoomsOverviewInfo,
+  IRoomsOverviewRequest,
+  IShortRoomInfo,
+} from "./src/game/room";
+import { IPlayerPositionUpdate } from "./src/game/player";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 const rooms: Room[] = [];
-const server = app.listen(Config.port, serverStarted);
+const server = app.listen(Config.serverPort, serverStarted);
 const io = new Server(server, { cors: { origin: "*" } });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function serverStarted(): void {
-  console.log("Server started on port " + Config.port);
+  if (process.env.NODE_ENV === "development") {
+    console.log("Development server started.");
+    console.log("Backend server started on port " + Config.serverPort);
+    console.log("Frontend server started on port " + Config.clientDevPort);
+  }
+  if (process.env.NODE_ENV === "production") {
+    console.log("Production server started.");
+    console.log("Server started on port " + Config.serverPort);
+  }
 }
+
+app.get("/", function (req: Request, res: Response): void {
+  if (process.env.NODE_ENV === "development") {
+    res.redirect("http://localhost:" + Config.clientDevPort);
+  }
+  if (process.env.NODE_ENV === "production") {
+    res.sendFile(__dirname + "/dist/index.html");
+  }
+});
+
+app.get("/assets/*", function (req: Request, res: Response): void {
+  res.sendFile(__dirname + "/dist" + req.url);
+});
 
 initializeRooms();
 setInterval(function () {
@@ -20,39 +53,45 @@ setInterval(function () {
   giveFullInfo();
 }, 500);
 
-io.on("connection", function (socket): void {
+io.on("connection", function (socket: Socket): void {
   console.log("A player connected");
-  socket.on("reqInfo", function (): void {
-    var roomInfo = new Array();
+  socket.on("reqInfo", function (msg: IRoomsOverviewRequest): void {
+    const roomsOverviewInfo: IRoomsOverviewInfo = new Array();
     for (var i = 0; i < rooms.length; i++) {
-      roomInfo[i] = rooms[i].playerCount;
+      roomsOverviewInfo[i] = rooms[i].playerCount;
     }
-    socket.emit("resInfo", roomInfo);
+    socket.emit("resInfo", roomsOverviewInfo);
   });
-  socket.on("joinRoom", function (msg) {
+  socket.on("joinRoom", function (msg: IJoinRoomInfo): void {
     socket.join("room" + msg.rn);
+    console.log("pobj: " + msg.pobj);
     rooms[msg.rn].players.push(msg.pobj);
     rooms[msg.rn].lines.push(new Array());
     console.log("A player joined Room " + msg.rn);
     rooms[msg.rn].active = true;
-    socket.emit("joinRoomSuccess", {
+    const info: IJoinedRoomSuccessInfo = {
       room: msg.rn,
       localID: rooms[msg.rn].players.length - 1,
-    });
+    };
+    socket.emit("joinRoomSuccess", info);
   });
-  socket.on("playerPositionUpdate", function (msg) {
-    rooms[msg.room].players[msg.localID].x = msg.x;
-    rooms[msg.room].players[msg.localID].y = msg.y;
-    rooms[msg.room].players[msg.localID].angle = msg.angle;
-    rooms[msg.room].players[msg.localID].steering = msg.steering;
-    rooms[msg.room].lines[msg.localID].push([msg.x, msg.y]);
-  });
+  socket.on(
+    "playerPositionUpdate",
+    function (msg: IPlayerPositionUpdate): void {
+      rooms[msg.room].players[msg.localID].x = msg.x;
+      rooms[msg.room].players[msg.localID].y = msg.y;
+      rooms[msg.room].players[msg.localID].angle = msg.angle;
+      rooms[msg.room].players[msg.localID].steering = msg.steering;
+      rooms[msg.room].lines[msg.localID].push([msg.x, msg.y]);
+    }
+  );
 });
 
 function giveRoomInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
-      io.to("room" + i).emit("giveRoomInfo", rooms[i].players);
+      const info: IShortRoomInfo = rooms[i].players;
+      io.to("room" + i).emit("giveRoomInfo", info);
     }
   }
 }
@@ -60,7 +99,8 @@ function giveRoomInfo(): void {
 function giveFullInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
-      io.to("room" + i).emit("giveFullInfo", rooms[i].lines);
+      const info: IFullRoomInfo = rooms[i].lines;
+      io.to("room" + i).emit("giveFullInfo", info);
     }
   }
 }

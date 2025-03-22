@@ -1,4 +1,9 @@
 export default class Config {
-  public static port = 3000;
+  // Prod: server = 3000, client = 3000
+  // Dev: server = 3000, client = 5173
+  public static serverPort = 3000;
+  public static clientDevPort = 5173;
   public static serverSize = 10;
+  public static turningSpeed = 0.05;
+  public static drivingSpeed = 2;
 }
