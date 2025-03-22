@@ -15,19 +15,16 @@ setInterval(function () {
   giveFullInfo();
 }, 500);
 
-app.get("/", function (req: Request, res: Response) {
+app.get("/", function (req: Request, res: Response): void {
   res.sendFile(__dirname + "/index.html");
 });
 
-app.get("/client.js", function (req: Request, res: Response) {
+app.get("/client.js", function (req: Request, res: Response): void {
   res.sendFile(__dirname + "/client.js");
 });
 
-io.on("connection", function (socket) {
-  socket.on("wow", function (msg) {
-    console.log("User clicked!");
-  });
-  socket.on("reqInfo", function (msg) {
+io.on("connection", function (socket): void {
+  socket.on("reqInfo", function (): void {
     var roomInfo = new Array();
     for (var i = 0; i < rooms.length; i++) {
       roomInfo[i] = rooms[i].playerCount;
@@ -58,24 +55,24 @@ app.listen(Config.port, function () {
   console.log("listening on *:" + Config.port);
 });
 
-function giveRoomInfo() {
+function giveRoomInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
-      io.to(i).emit("giveRoomInfo", rooms[i].players);
+      io.to("room" + i).emit("giveRoomInfo", rooms[i].players);
     }
   }
 }
 
-function giveFullInfo() {
+function giveFullInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
-      io.to(i).emit("giveFullInfo", rooms[i].lines);
+      io.to("room" + i).emit("giveFullInfo", rooms[i].lines);
     }
   }
 }
 
-function initializeRooms() {
-  rooms = new Array();
+function initializeRooms(): void {
+  rooms.length = 0; // empties the array
   for (var i = 0; i < 10; i++) {
     rooms[i] = new Room(i);
   }
