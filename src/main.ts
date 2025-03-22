@@ -31,8 +31,8 @@ function initCanvas() {
   canvas.addEventListener("click", click);
   socket.emit("reqInfo", "");
   context = canvas.getContext("2d")!;
-  headLineText("Curve Game", "black");
-  smallText("Loading Rooms..", "black");
+  headLineText("curve game", "black");
+  smallText("loading rooms..", "black");
 }
 
 for (var i = 0; i < 200; i++) {
@@ -80,9 +80,9 @@ socket.on("resInfo", function (msg: IRoomsOverviewInfo): void {
 function headLineText(txt: string, color: string): void {
   context.fillStyle = color;
   context.font = "bold 50px sans-serif";
-  context.textAlign = "center";
+  context.textAlign = "left";
   context.clearRect(0, 50, 500, 50);
-  context.fillText(txt, 250, 75);
+  context.fillText(txt, 50, 75);
 }
 
 function smallText(txt: string, color: string): void {
@@ -102,7 +102,7 @@ function drawGrid(txtArray: string[]): void {
     var oy = Math.floor(i / 4) * 125 + 125;
     context.fillRect(ox, oy, 75, 75);
     context.clearRect(ox + 5, oy + 5, 65, 65);
-    context.fillText(txtArray[i], ox + 38, oy + 38);
+    context.fillText("play", ox + 38, oy + 38);
   }
 }
 

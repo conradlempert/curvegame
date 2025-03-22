@@ -107,7 +107,7 @@ function giveFullInfo(): void {
 
 function initializeRooms(): void {
   rooms.length = 0; // empties the array
-  for (var i = 0; i < 10; i++) {
+  for (var i = 0; i < Config.serverSize; i++) {
     rooms[i] = new Room(i);
   }
 }
