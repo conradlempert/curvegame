@@ -1,12 +1,18 @@
 # curvegame
 
+## Play the game online
+
+Play it here: **https://curvegame.onrender.com**
+
+## General info
+
 <img src="https://github.com/user-attachments/assets/41cc399e-0852-4b34-a243-791d47119505" width="500"/>
 
 This is a multiplayer game about surviving the longest as a snake.
 
 It is written in JavaScript with an express server and socket.io.
 
-## Run the server
+## Run the server locally
 
 Run this in the root folder of the repository:
 
@@ -15,7 +21,7 @@ npm install
 node server.js
 ```
 
-## Play the game
+## Play the game locally
 
 This is a multiplayer game (i.e., you want to join the server from multiple clients).
 
