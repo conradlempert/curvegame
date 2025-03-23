@@ -19,9 +19,9 @@ const socket: Socket = import.meta.env.PROD
 let status: number = 0;
 let roomInfo: IRoomsOverviewInfo;
 let keys: boolean[] = [];
-let lPD: Player[] = [];
-let lPL: ILine[] = [];
-let player1: Player;
+let localPlayersInfo: Player[] = [];
+let localPlayersLines: ILine[] = [];
+let thisPlayer: Player;
 let context: CanvasRenderingContext2D;
 let room: number;
 let localID: number;
@@ -39,26 +39,29 @@ for (var i = 0; i < 200; i++) {
   keys[i] = false;
 }
 
-function vFA(a: number): [number, number] {
-  return [Math.cos(a), Math.sin(a)];
+function vectorFromAngle(angle: number): [number, number] {
+  return [Math.cos(angle), Math.sin(angle)];
 }
-function click(e: MouseEvent): void {
+function click(event: MouseEvent): void {
   let mouseX: number, mouseY: number;
 
-  if (e.offsetX) {
-    mouseX = e.offsetX;
-    mouseY = e.offsetY;
+  if (event.offsetX) {
+    mouseX = event.offsetX;
+    mouseY = event.offsetY;
   } else {
-    mouseX = e.layerX;
-    mouseY = e.layerY;
+    mouseX = event.layerX;
+    mouseY = event.layerY;
   }
 
   if (status == 1) {
     const roomNumber = getGridClick(mouseX, mouseY, roomInfo.length);
 
     if (roomNumber != -1) {
-      player1 = new Player();
-      const roomJoinInfo: IJoinRoomInfo = { rn: roomNumber, pobj: player1 };
+      thisPlayer = new Player();
+      const roomJoinInfo: IJoinRoomInfo = {
+        roomNumber: roomNumber,
+        playerData: thisPlayer,
+      };
       socket.emit("joinRoom", roomJoinInfo);
     }
   }
@@ -119,7 +122,7 @@ function getGridClick(x: number, y: number, arrayLength: number): number {
 
 socket.on("joinRoomSuccess", function (msg: IJoinedRoomSuccessInfo): void {
   status = 2;
-  room = msg.room;
+  room = msg.roomNumber;
   localID = msg.localID;
   console.log("localID: " + localID);
   goInGame();
@@ -133,33 +136,44 @@ function goInGame(): void {
 
 function tick(): void {
   context.clearRect(0, 0, 500, 500);
-  player1.steering = 0;
+  thisPlayer.steering = 0;
   if (keys[37]) {
-    player1.angle -= Config.turningSpeed;
-    player1.steering = -1;
+    thisPlayer.angle -= Config.turningSpeed;
+    thisPlayer.steering = -1;
   }
   if (keys[39]) {
-    player1.angle += Config.turningSpeed;
-    player1.steering = 1;
+    thisPlayer.angle += Config.turningSpeed;
+    thisPlayer.steering = 1;
   }
-  player1.x += vFA(player1.angle)[0] * Config.drivingSpeed;
-  player1.y += vFA(player1.angle)[1] * Config.drivingSpeed;
-  lPL[localID].push([player1.x, player1.y]);
+  thisPlayer.x += vectorFromAngle(thisPlayer.angle)[0] * Config.drivingSpeed;
+  thisPlayer.y += vectorFromAngle(thisPlayer.angle)[1] * Config.drivingSpeed;
+  localPlayersLines[localID].push([thisPlayer.x, thisPlayer.y]);
   context.fillStyle = "black";
-  context.fillRect(player1.x, player1.y, 5, 5);
+  context.fillRect(
+    thisPlayer.x,
+    thisPlayer.y,
+    Config.playerHeadSize,
+    Config.playerHeadSize
+  );
 
-  //Die Linien aller Spieler malen
-  for (var p = 0; p < lPL.length; p++) {
-    for (var i = 0; i < lPL[p].length; i++) {
+  // draw the lines of all players
+  for (var p = 0; p < localPlayersLines.length; p++) {
+    for (var i = 0; i < localPlayersLines[p].length; i++) {
       context.fillStyle = "red";
       if (p == localID) {
         context.fillStyle = "black";
       }
-      context.fillRect(lPL[p][i][0], lPL[p][i][1], 5, 5);
+      context.fillRect(
+        localPlayersLines[p][i][0],
+        localPlayersLines[p][i][1],
+        Config.playerHeadSize,
+        Config.playerHeadSize
+      );
     }
   }
-  //Daten der anderen Spieler berechnen
-  for (var i = 0; i < lPD.length; i++) {
+
+  // compute the position of all other players
+  for (var i = 0; i < localPlayersInfo.length; i++) {
     if (i != localID) {
       computeOtherPlayer(i);
     }
@@ -167,10 +181,10 @@ function tick(): void {
   const playerPositionUpdate: IPlayerPositionUpdate = {
     room: room,
     localID: localID,
-    x: player1.x,
-    y: player1.y,
-    angle: player1.angle,
-    steering: player1.steering,
+    x: thisPlayer.x,
+    y: thisPlayer.y,
+    angle: thisPlayer.angle,
+    steering: thisPlayer.steering,
   };
   socket.emit("playerPositionUpdate", playerPositionUpdate);
 }
@@ -178,31 +192,33 @@ function tick(): void {
 socket.on("giveRoomInfo", function (serverPlayers: IShortRoomInfo): void {
   for (var i = 0; i < serverPlayers.length; i++) {
     if (i != localID) {
-      lPD[i] = serverPlayers[i];
+      localPlayersInfo[i] = serverPlayers[i];
     }
   }
 });
 
 socket.on("giveFullInfo", function (serverLines: IFullRoomInfo): void {
   for (var i = 0; i < serverLines.length; i++) {
-    lPL[i] = serverLines[i];
+    localPlayersLines[i] = serverLines[i];
   }
 });
 
 function computeOtherPlayer(nr: number): void {
-  if (lPD[nr].steering == 1) {
-    lPD[nr].angle += Config.turningSpeed;
+  if (localPlayersInfo[nr].steering == 1) {
+    localPlayersInfo[nr].angle += Config.turningSpeed;
   }
-  if (lPD[nr].steering == -1) {
-    lPD[nr].angle -= Config.turningSpeed;
+  if (localPlayersInfo[nr].steering == -1) {
+    localPlayersInfo[nr].angle -= Config.turningSpeed;
   }
 
-  lPD[nr].x += vFA(lPD[nr].angle)[0] * Config.drivingSpeed;
-  lPD[nr].y += vFA(lPD[nr].angle)[1] * Config.drivingSpeed;
-  lPL[nr].push([lPD[nr].x, lPD[nr].y]);
+  localPlayersInfo[nr].x +=
+    vectorFromAngle(localPlayersInfo[nr].angle)[0] * Config.drivingSpeed;
+  localPlayersInfo[nr].y +=
+    vectorFromAngle(localPlayersInfo[nr].angle)[1] * Config.drivingSpeed;
+  localPlayersLines[nr].push([localPlayersInfo[nr].x, localPlayersInfo[nr].y]);
 
   context.fillStyle = "red";
-  context.fillRect(lPD[nr].x, lPD[nr].y, 5, 5);
+  context.fillRect(localPlayersInfo[nr].x, localPlayersInfo[nr].y, 5, 5);
 }
 
 document.body.onkeydown = function (event: KeyboardEvent): void {

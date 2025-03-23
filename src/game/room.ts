@@ -1,15 +1,15 @@
-import Player, { ILine } from "./player";
+import Player, { ILine, IPlayerData } from "./player";
 
 export type IRoomsOverviewRequest = "";
 export type IRoomsOverviewInfo = number[];
 
 export interface IJoinRoomInfo {
-  rn: number;
-  pobj: Player;
+  roomNumber: number;
+  playerData: IPlayerData;
 }
 
 export interface IJoinedRoomSuccessInfo {
-  room: number;
+  roomNumber: number;
   localID: number;
 }
 
@@ -29,5 +29,22 @@ export default class Room {
     this.lines = new Array();
     this.playerCount = 0;
     this.active = false;
+  }
+
+  public computeCollisions(): void {
+    for (var i = 0; i < this.players.length; i++) {
+      const relevantLines = this.getRelevantLines(i);
+      if (this.players[i].collidesWithLines(relevantLines)) {
+        console.log("Player " + i + " collided");
+      }
+    }
+  }
+
+  private getRelevantLines(playerIndex: number): ILine[] {
+    return this.lines.map((line, lineIndex) => {
+      return lineIndex === playerIndex
+        ? Player.getLineWithoutEnding(line)
+        : line;
+    });
   }
 }

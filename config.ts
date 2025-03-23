@@ -6,4 +6,7 @@ export default class Config {
   public static serverSize = 1;
   public static turningSpeed = 0.05;
   public static drivingSpeed = 2;
+  public static playerHeadSize = 5;
+  public static collisionDistance = 5; // should normally be the same as playerHeadSize
+  public static collisionLineEndingRemoval = 20;
 }

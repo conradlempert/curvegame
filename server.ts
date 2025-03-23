@@ -9,7 +9,7 @@ import Room, {
   IRoomsOverviewRequest,
   IShortRoomInfo,
 } from "./src/game/room";
-import { IPlayerPositionUpdate } from "./src/game/player";
+import Player, { IPlayerPositionUpdate } from "./src/game/player";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -63,15 +63,14 @@ io.on("connection", function (socket: Socket): void {
     socket.emit("resInfo", roomsOverviewInfo);
   });
   socket.on("joinRoom", function (msg: IJoinRoomInfo): void {
-    socket.join("room" + msg.rn);
-    console.log("pobj: " + msg.pobj);
-    rooms[msg.rn].players.push(msg.pobj);
-    rooms[msg.rn].lines.push(new Array());
-    console.log("A player joined Room " + msg.rn);
-    rooms[msg.rn].active = true;
+    socket.join("room" + msg.roomNumber);
+    rooms[msg.roomNumber].players.push(Player.fromData(msg.playerData));
+    rooms[msg.roomNumber].lines.push(new Array());
+    console.log("A player joined Room " + msg.roomNumber);
+    rooms[msg.roomNumber].active = true;
     const info: IJoinedRoomSuccessInfo = {
-      room: msg.rn,
-      localID: rooms[msg.rn].players.length - 1,
+      roomNumber: msg.roomNumber,
+      localID: rooms[msg.roomNumber].players.length - 1,
     };
     socket.emit("joinRoomSuccess", info);
   });
@@ -99,6 +98,7 @@ function giveRoomInfo(): void {
 function giveFullInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
+      rooms[i].computeCollisions();
       const info: IFullRoomInfo = rooms[i].lines;
       io.to("room" + i).emit("giveFullInfo", info);
     }
