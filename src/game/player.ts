@@ -32,8 +32,10 @@ export default class Player {
   }
 
   public placeAtRandomPosition(): void {
-    this.x = Math.floor(Math.random() * Config.gameSize);
-    this.y = Math.floor(Math.random() * Config.gameSize);
+    const min = Config.spawnPadding;
+    const max = Config.gameSize - Config.spawnPadding;
+    this.x = Math.floor(Math.random() * (max - min) + min);
+    this.y = Math.floor(Math.random() * (max - min) + min);
     this.angle = Math.random() * 2 * Math.PI;
     this.steering = 0;
   }
