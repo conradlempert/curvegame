@@ -31,21 +31,17 @@ export default class Room {
     this.active = false;
   }
 
-  public computeCollisions(): void {
+  public computeCollisions(): boolean {
     for (var i = 0; i < this.players.length; i++) {
       const relevantLines = this.getRelevantLines(i);
       if (this.players[i].collidesWithLines(relevantLines)) {
-        console.log("collision");
-        this.resetRoom();
-        return;
+        return true;
       }
     }
+    return false;
   }
 
   public resetRoom(): void {
-    this.players.forEach((player) => {
-      player.placeAtRandomPosition();
-    });
     this.lines = this.players.map(() => new Array());
   }
 

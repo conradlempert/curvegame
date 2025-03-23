@@ -89,7 +89,10 @@ io.on("connection", function (socket: Socket): void {
 function giveRoomInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
-      rooms[i].computeCollisions();
+      if (rooms[i].computeCollisions()) {
+        rooms[i].resetRoom();
+        io.to("room" + i).emit("roomReset");
+      }
       const info: IShortRoomInfo = rooms[i].players;
       io.to("room" + i).emit("giveRoomInfo", info);
     }

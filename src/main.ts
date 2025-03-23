@@ -127,6 +127,10 @@ socket.on("joinRoomSuccess", function (msg: IJoinedRoomSuccessInfo): void {
   console.log("localID: " + localID);
   goInGame();
 });
+socket.on("roomReset", function (): void {
+  localPlayersLines = localPlayersLines.map(() => new Array());
+  thisPlayer.placeAtRandomPosition();
+});
 function goInGame(): void {
   context.clearRect(0, 0, 500, 500);
   window.setInterval(function () {
