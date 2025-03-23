@@ -89,6 +89,7 @@ io.on("connection", function (socket: Socket): void {
 function giveRoomInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
+      rooms[i].computeCollisions();
       const info: IShortRoomInfo = rooms[i].players;
       io.to("room" + i).emit("giveRoomInfo", info);
     }
@@ -98,7 +99,6 @@ function giveRoomInfo(): void {
 function giveFullInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
-      rooms[i].computeCollisions();
       const info: IFullRoomInfo = rooms[i].lines;
       io.to("room" + i).emit("giveFullInfo", info);
     }

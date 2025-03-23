@@ -35,9 +35,18 @@ export default class Room {
     for (var i = 0; i < this.players.length; i++) {
       const relevantLines = this.getRelevantLines(i);
       if (this.players[i].collidesWithLines(relevantLines)) {
-        console.log("Player " + i + " collided");
+        console.log("collision");
+        this.resetRoom();
+        return;
       }
     }
+  }
+
+  public resetRoom(): void {
+    this.players.forEach((player) => {
+      player.placeAtRandomPosition();
+    });
+    this.lines = this.players.map(() => new Array());
   }
 
   private getRelevantLines(playerIndex: number): ILine[] {

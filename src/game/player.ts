@@ -28,6 +28,10 @@ export default class Player {
 
   constructor() {
     this.active = false;
+    this.placeAtRandomPosition();
+  }
+
+  public placeAtRandomPosition(): void {
     this.x = Math.floor(Math.random() * 500);
     this.y = Math.floor(Math.random() * 500);
     this.angle = Math.random() * 2 * Math.PI;
@@ -35,7 +39,7 @@ export default class Player {
   }
 
   public static getLineWithoutEnding(line: ILine): ILine {
-    return line.slice(0, line.length - Config.collisionLineEndingRemoval);
+    return line.slice(0, -Config.collisionLineEndingRemoval);
   }
 
   public static fromData(data: IPlayerData): Player {
@@ -59,10 +63,9 @@ export default class Player {
     return false;
   }
   public collidesWithPoint(point: [number, number]): boolean {
-    return (
-      Math.sqrt(
-        Math.pow(point[0] - this.x, 2) + Math.pow(point[1] - this.y, 2)
-      ) < Config.collisionDistance
+    const distance = Math.sqrt(
+      Math.pow(point[0] - this.x, 2) + Math.pow(point[1] - this.y, 2)
     );
+    return distance < Config.collisionDistance;
   }
 }
