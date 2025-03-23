@@ -32,8 +32,8 @@ export default class Player {
   }
 
   public placeAtRandomPosition(): void {
-    this.x = Math.floor(Math.random() * 500);
-    this.y = Math.floor(Math.random() * 500);
+    this.x = Math.floor(Math.random() * Config.gameSize);
+    this.y = Math.floor(Math.random() * Config.gameSize);
     this.angle = Math.random() * 2 * Math.PI;
     this.steering = 0;
   }

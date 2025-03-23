@@ -9,4 +9,5 @@ export default class Config {
   public static playerHeadSize = 5;
   public static collisionDistance = 5; // should normally be the same as playerHeadSize
   public static collisionLineEndingRemoval = 20;
+  public static gameSize = 500;
 }

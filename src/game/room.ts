@@ -1,3 +1,4 @@
+import Config from "../../config";
 import Player, { ILine, IPlayerData } from "./player";
 
 export type IRoomsOverviewRequest = "";
@@ -32,6 +33,17 @@ export default class Room {
   }
 
   public computeCollisions(): boolean {
+    for (var i = 0; i < this.players.length; i++) {
+      // check wall collisions
+      if (
+        this.players[i].x < 0 ||
+        this.players[i].x > Config.gameSize ||
+        this.players[i].y < 0 ||
+        this.players[i].y > Config.gameSize
+      ) {
+        return true;
+      }
+    }
     for (var i = 0; i < this.players.length; i++) {
       const relevantLines = this.getRelevantLines(i);
       if (this.players[i].collidesWithLines(relevantLines)) {

@@ -84,7 +84,7 @@ function headLineText(txt: string, color: string): void {
   context.fillStyle = color;
   context.font = "bold 50px sans-serif";
   context.textAlign = "left";
-  context.clearRect(0, 50, 500, 50);
+  context.clearRect(0, 50, Config.gameSize, 50);
   context.fillText(txt, 50, 75);
 }
 
@@ -92,12 +92,12 @@ function smallText(txt: string, color: string): void {
   context.fillStyle = color;
   context.font = "bold 30px sans-serif";
   context.textAlign = "center";
-  context.clearRect(0, 285, 500, 30);
+  context.clearRect(0, 285, Config.gameSize, 30);
   context.fillText(txt, 250, 300);
 }
 
 function drawGrid(txtArray: string[]): void {
-  context.clearRect(0, 100, 500, 400);
+  context.clearRect(0, 100, Config.gameSize, 400);
   context.font = "bold 20px sans-serif";
   context.textAlign = "center";
   for (var i = 0; i < txtArray.length; i++) {
@@ -132,14 +132,14 @@ socket.on("roomReset", function (): void {
   thisPlayer.placeAtRandomPosition();
 });
 function goInGame(): void {
-  context.clearRect(0, 0, 500, 500);
+  context.clearRect(0, 0, Config.gameSize, Config.gameSize);
   window.setInterval(function () {
     tick();
   }, 20);
 }
 
 function tick(): void {
-  context.clearRect(0, 0, 500, 500);
+  context.clearRect(0, 0, Config.gameSize, Config.gameSize);
   thisPlayer.steering = 0;
   if (keys[37]) {
     thisPlayer.angle -= Config.turningSpeed;
