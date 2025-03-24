@@ -27,6 +27,10 @@ export default class Player {
   active: boolean;
 
   constructor() {
+    this.x = 0;
+    this.y = 0;
+    this.angle = 0;
+    this.steering = 0;
     this.active = false;
     this.placeAtRandomPosition();
   }
