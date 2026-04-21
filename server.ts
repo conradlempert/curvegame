@@ -72,6 +72,7 @@ io.on("connection", function (socket: Socket): void {
     const info: IJoinedRoomSuccessInfo = {
       roomNumber: msg.roomNumber,
       localID: rooms[msg.roomNumber].players.length - 1,
+      round: rooms[msg.roomNumber].round,
     };
     socket.emit("joinRoomSuccess", info);
     io.to("room" + msg.roomNumber).emit("scoresUpdate", rooms[msg.roomNumber].scores);
@@ -79,11 +80,15 @@ io.on("connection", function (socket: Socket): void {
   socket.on(
     "playerPositionUpdate",
     function (msg: IPlayerPositionUpdate): void {
-      rooms[msg.room].players[msg.localID].x = msg.x;
-      rooms[msg.room].players[msg.localID].y = msg.y;
-      rooms[msg.room].players[msg.localID].angle = msg.angle;
-      rooms[msg.room].players[msg.localID].steering = msg.steering;
-      rooms[msg.room].lines[msg.localID].push([msg.x, msg.y]);
+      const room = rooms[msg.room];
+      // Drop stale updates from a previous round to avoid leftover line artifacts
+      // when a position packet arrives after the room was just reset.
+      if (!room || msg.round !== room.round) return;
+      room.players[msg.localID].x = msg.x;
+      room.players[msg.localID].y = msg.y;
+      room.players[msg.localID].angle = msg.angle;
+      room.players[msg.localID].steering = msg.steering;
+      room.lines[msg.localID].push([msg.x, msg.y]);
     }
   );
 });
@@ -95,8 +100,9 @@ function giveRoomInfo(): void {
       if (dead.length > 0) {
         rooms[i].awardPointsForDeaths(dead);
         rooms[i].resetRoom();
+        rooms[i].round += 1;
         io.to("room" + i).emit("scoresUpdate", rooms[i].scores);
-        io.to("room" + i).emit("roomReset");
+        io.to("room" + i).emit("roomReset", { round: rooms[i].round });
       }
       const info: IShortRoomInfo = rooms[i].players;
       io.to("room" + i).emit("giveRoomInfo", info);

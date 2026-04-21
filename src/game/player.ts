@@ -3,6 +3,7 @@ import Config from "../../config";
 export interface IPlayerPositionUpdate {
   room: number;
   localID: number;
+  round: number;
   x: number;
   y: number;
   angle: number;

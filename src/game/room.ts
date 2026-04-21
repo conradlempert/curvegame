@@ -12,6 +12,11 @@ export interface IJoinRoomInfo {
 export interface IJoinedRoomSuccessInfo {
   roomNumber: number;
   localID: number;
+  round: number;
+}
+
+export interface IRoomResetInfo {
+  round: number;
 }
 
 export type IShortRoomInfo = Player[];
@@ -25,6 +30,7 @@ export default class Room {
   scores: number[];
   playerCount: number;
   active: boolean;
+  round: number;
 
   constructor(nr: number) {
     this.nr = nr;
@@ -33,6 +39,7 @@ export default class Room {
     this.scores = new Array();
     this.playerCount = 0;
     this.active = false;
+    this.round = 0;
   }
 
   public computeCollisions(): number[] {

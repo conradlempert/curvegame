@@ -5,6 +5,7 @@ import {
   IFullRoomInfo,
   IJoinedRoomSuccessInfo,
   IJoinRoomInfo,
+  IRoomResetInfo,
   IRoomsOverviewInfo,
   IScoresInfo,
   IShortRoomInfo,
@@ -22,6 +23,7 @@ let thisPlayer: Player;
 let context: CanvasRenderingContext2D;
 let room: number;
 let localID: number;
+let currentRound: number = 0;
 
 function initCanvas() {
   var canvas = document.getElementById("canvas1") as HTMLCanvasElement;
@@ -156,13 +158,15 @@ socket.on("joinRoomSuccess", function (msg: IJoinedRoomSuccessInfo): void {
   status = 2;
   room = msg.roomNumber;
   localID = msg.localID;
+  currentRound = msg.round;
   console.log("localID: " + localID);
   for (var i = 0; i <= localID; i++) {
     if (!localPlayersLines[i]) localPlayersLines[i] = [];
   }
   goInGame();
 });
-socket.on("roomReset", function (): void {
+socket.on("roomReset", function (msg: IRoomResetInfo): void {
+  currentRound = msg.round;
   localPlayersLines = localPlayersLines.map(() => new Array());
   thisPlayer.placeAtRandomPosition();
 });
@@ -234,6 +238,7 @@ function tick(): void {
   const playerPositionUpdate: IPlayerPositionUpdate = {
     room: room,
     localID: localID,
+    round: currentRound,
     x: thisPlayer.x,
     y: thisPlayer.y,
     angle: thisPlayer.angle,
