@@ -25,6 +25,11 @@ let room: number;
 let localID: number;
 let currentRound: number = 0;
 
+function playerColor(index: number, lightness: number = 45): string {
+  const hue = (index * 137.508) % 360;
+  return `hsl(${hue}, 70%, ${lightness}%)`;
+}
+
 function initCanvas() {
   var canvas = document.getElementById("canvas1") as HTMLCanvasElement;
   canvas.addEventListener("click", click);
@@ -193,6 +198,7 @@ socket.on("joinRoomSuccess", function (msg: IJoinedRoomSuccessInfo): void {
   for (var i = 0; i <= localID; i++) {
     if (!localPlayersLines[i]) localPlayersLines[i] = [];
   }
+  document.body.style.backgroundColor = playerColor(localID, 85);
   goInGame();
 });
 socket.on("roomReset", function (msg: IRoomResetInfo): void {
@@ -235,7 +241,7 @@ function tick(): void {
   thisPlayer.x += vectorFromAngle(thisPlayer.angle)[0] * Config.drivingSpeed;
   thisPlayer.y += vectorFromAngle(thisPlayer.angle)[1] * Config.drivingSpeed;
   localPlayersLines[localID].push([thisPlayer.x, thisPlayer.y]);
-  context.fillStyle = "black";
+  context.fillStyle = playerColor(localID);
   context.fillRect(
     thisPlayer.x,
     thisPlayer.y,
@@ -245,11 +251,8 @@ function tick(): void {
 
   // draw the lines of all players
   for (var p = 0; p < localPlayersLines.length; p++) {
+    context.fillStyle = playerColor(p);
     for (var i = 0; i < localPlayersLines[p].length; i++) {
-      context.fillStyle = "red";
-      if (p == localID) {
-        context.fillStyle = "black";
-      }
       context.fillRect(
         localPlayersLines[p][i][0],
         localPlayersLines[p][i][1],
@@ -313,7 +316,8 @@ function renderScoreboard(): void {
     .map((score, idx) => {
       const isYou = idx === localID;
       const label = isYou ? `Player ${idx + 1} (you)` : `Player ${idx + 1}`;
-      return `<li class="${isYou ? "you" : ""}"><span>${label}</span><span>${score}</span></li>`;
+      const swatch = `<span class="swatch" style="background:${playerColor(idx)}"></span>`;
+      return `<li class="${isYou ? "you" : ""}"><span class="name">${swatch}${label}</span><span>${score}</span></li>`;
     })
     .join("");
   el.innerHTML = `<h2>Scores</h2><ul>${items}</ul>`;
@@ -335,7 +339,7 @@ function computeOtherPlayer(nr: number): void {
     vectorFromAngle(localPlayersInfo[nr].angle)[1] * Config.drivingSpeed;
   localPlayersLines[nr].push([localPlayersInfo[nr].x, localPlayersInfo[nr].y]);
 
-  context.fillStyle = "red";
+  context.fillStyle = playerColor(nr);
   context.fillRect(localPlayersInfo[nr].x, localPlayersInfo[nr].y, 5, 5);
 }
 
