@@ -103,7 +103,7 @@ body {
   background: #2563eb;
   color: white;
 }
-@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+@media (hover: hover) and (pointer: fine) {
   .touch-controls {
     display: none;
   }
