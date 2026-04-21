@@ -66,6 +66,7 @@ io.on("connection", function (socket: Socket): void {
     socket.join("room" + msg.roomNumber);
     rooms[msg.roomNumber].players.push(Player.fromData(msg.playerData));
     rooms[msg.roomNumber].lines.push(new Array());
+    rooms[msg.roomNumber].scores.push(0);
     console.log("A player joined Room " + msg.roomNumber);
     rooms[msg.roomNumber].active = true;
     const info: IJoinedRoomSuccessInfo = {
@@ -73,6 +74,7 @@ io.on("connection", function (socket: Socket): void {
       localID: rooms[msg.roomNumber].players.length - 1,
     };
     socket.emit("joinRoomSuccess", info);
+    io.to("room" + msg.roomNumber).emit("scoresUpdate", rooms[msg.roomNumber].scores);
   });
   socket.on(
     "playerPositionUpdate",
@@ -89,8 +91,11 @@ io.on("connection", function (socket: Socket): void {
 function giveRoomInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active) {
-      if (rooms[i].computeCollisions()) {
+      const dead = rooms[i].computeCollisions();
+      if (dead.length > 0) {
+        rooms[i].awardPointsForDeaths(dead);
         rooms[i].resetRoom();
+        io.to("room" + i).emit("scoresUpdate", rooms[i].scores);
         io.to("room" + i).emit("roomReset");
       }
       const info: IShortRoomInfo = rooms[i].players;

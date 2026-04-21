@@ -6,6 +6,7 @@ import {
   IJoinedRoomSuccessInfo,
   IJoinRoomInfo,
   IRoomsOverviewInfo,
+  IScoresInfo,
   IShortRoomInfo,
 } from "./game/room";
 import Config from "../config";
@@ -240,6 +241,32 @@ socket.on("giveFullInfo", function (serverLines: IFullRoomInfo): void {
     localPlayersLines[i] = serverLines[i];
   }
 });
+
+let scores: IScoresInfo = [];
+socket.on("scoresUpdate", function (msg: IScoresInfo): void {
+  scores = msg;
+  renderScoreboard();
+});
+
+function renderScoreboard(): void {
+  const el = document.getElementById("scoreboard");
+  if (!el) return;
+  if (!scores || scores.length === 0) {
+    el.innerHTML =
+      '<h2>Scores</h2><div class="empty">Join a room to start scoring.</div>';
+    return;
+  }
+  const items = scores
+    .map((score, idx) => {
+      const isYou = idx === localID;
+      const label = isYou ? `Player ${idx + 1} (you)` : `Player ${idx + 1}`;
+      return `<li class="${isYou ? "you" : ""}"><span>${label}</span><span>${score}</span></li>`;
+    })
+    .join("");
+  el.innerHTML = `<h2>Scores</h2><ul>${items}</ul>`;
+}
+
+renderScoreboard();
 
 function computeOtherPlayer(nr: number): void {
   if (localPlayersInfo[nr].steering == 1) {

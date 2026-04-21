@@ -16,11 +16,13 @@ export interface IJoinedRoomSuccessInfo {
 
 export type IShortRoomInfo = Player[];
 export type IFullRoomInfo = ILine[];
+export type IScoresInfo = number[];
 
 export default class Room {
   nr: number;
   players: Player[];
   lines: ILine[];
+  scores: number[];
   playerCount: number;
   active: boolean;
 
@@ -28,29 +30,39 @@ export default class Room {
     this.nr = nr;
     this.players = new Array();
     this.lines = new Array();
+    this.scores = new Array();
     this.playerCount = 0;
     this.active = false;
   }
 
-  public computeCollisions(): boolean {
+  public computeCollisions(): number[] {
+    const dead: number[] = [];
     for (var i = 0; i < this.players.length; i++) {
-      // check wall collisions
       if (
         this.players[i].x < 0 ||
         this.players[i].x > Config.gameSize ||
         this.players[i].y < 0 ||
         this.players[i].y > Config.gameSize
       ) {
-        return true;
+        dead.push(i);
+        continue;
       }
-    }
-    for (var i = 0; i < this.players.length; i++) {
       const relevantLines = this.getRelevantLines(i);
       if (this.players[i].collidesWithLines(relevantLines)) {
-        return true;
+        dead.push(i);
       }
     }
-    return false;
+    return dead;
+  }
+
+  public awardPointsForDeaths(dead: number[]): void {
+    if (dead.length === 0) return;
+    const deadSet = new Set(dead);
+    for (var i = 0; i < this.players.length; i++) {
+      if (!deadSet.has(i)) {
+        this.scores[i] = (this.scores[i] || 0) + 1;
+      }
+    }
   }
 
   public resetRoom(): void {
