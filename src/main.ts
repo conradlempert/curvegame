@@ -34,6 +34,36 @@ function initCanvas() {
   context = canvas.getContext("2d")!;
   headLineText("curve game", "black");
   smallText("loading rooms..", "black");
+  initTouchControls();
+}
+
+function initTouchControls(): void {
+  const btnLeft = document.getElementById("btnLeft");
+  const btnRight = document.getElementById("btnRight");
+  if (!btnLeft || !btnRight) return;
+  bindHoldButton(btnLeft, 37);
+  bindHoldButton(btnRight, 39);
+}
+
+function bindHoldButton(el: HTMLElement, keyCode: number): void {
+  const press = (e: Event) => {
+    e.preventDefault();
+    keys[keyCode] = true;
+    el.classList.add("pressed");
+  };
+  const release = (e: Event) => {
+    e.preventDefault();
+    keys[keyCode] = false;
+    el.classList.remove("pressed");
+  };
+  el.addEventListener("pointerdown", (e) => {
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    press(e);
+  });
+  el.addEventListener("pointerup", release);
+  el.addEventListener("pointercancel", release);
+  el.addEventListener("pointerleave", release);
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
 }
 
 let hoveredRoom: number = -1;

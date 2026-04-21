@@ -59,3 +59,55 @@ body {
   color: #888;
   font-size: 13px;
 }
+.touch-controls {
+  display: flex;
+  width: 500px;
+  max-width: 100%;
+  gap: 12px;
+  touch-action: none;
+}
+.touch-btn {
+  flex: 1;
+  height: 90px;
+  font-size: 48px;
+  font-weight: bold;
+  background: white;
+  color: #111;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0px 0px 10px 0px #000000;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.touch-btn:active,
+.touch-btn.pressed {
+  background: #2563eb;
+  color: white;
+}
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  .touch-controls {
+    display: none;
+  }
+}
+@media (max-width: 540px) {
+  body {
+    padding: 8px;
+  }
+  #canvas1,
+  .canvas-container,
+  .scoreboard,
+  .touch-controls {
+    width: 100%;
+    max-width: 500px;
+  }
+  #canvas1 {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+  .scoreboard {
+    width: 100%;
+  }
+}
