@@ -168,9 +168,23 @@ socket.on("roomReset", function (): void {
 });
 function goInGame(): void {
   context.clearRect(0, 0, Config.gameSize, Config.gameSize);
-  window.setInterval(function () {
-    tick();
-  }, 20);
+  startTickLoop(20);
+}
+
+function startTickLoop(intervalMs: number): void {
+  // Browsers throttle setInterval/setTimeout in background tabs (down to ~1Hz),
+  // which would slow the game to a crawl when the tab loses focus.
+  // Web Workers are not throttled, so drive the tick from a worker.
+  try {
+    const workerSrc = `let id=null;onmessage=(e)=>{if(e.data&&e.data.type==='start'){clearInterval(id);id=setInterval(()=>postMessage('tick'),e.data.interval);}else if(e.data&&e.data.type==='stop'){clearInterval(id);id=null;}};`;
+    const blob = new Blob([workerSrc], { type: "application/javascript" });
+    const worker = new Worker(URL.createObjectURL(blob));
+    worker.onmessage = () => tick();
+    worker.postMessage({ type: "start", interval: intervalMs });
+  } catch (err) {
+    console.warn("Worker timer unavailable, falling back to setInterval", err);
+    window.setInterval(tick, intervalMs);
+  }
 }
 
 function tick(): void {
