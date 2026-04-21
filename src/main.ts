@@ -25,10 +25,36 @@ let localID: number;
 function initCanvas() {
   var canvas = document.getElementById("canvas1") as HTMLCanvasElement;
   canvas.addEventListener("click", click);
+  canvas.addEventListener("mousemove", mouseMove);
+  canvas.addEventListener("mouseleave", mouseLeave);
   socket.emit("reqInfo", "");
   context = canvas.getContext("2d")!;
   headLineText("curve game", "black");
   smallText("loading rooms..", "black");
+}
+
+let hoveredRoom: number = -1;
+
+function mouseMove(event: MouseEvent): void {
+  if (status != 1) return;
+  const mouseX = event.offsetX;
+  const mouseY = event.offsetY;
+  const newHover = getGridClick(mouseX, mouseY, roomInfo.length);
+  if (newHover !== hoveredRoom) {
+    hoveredRoom = newHover;
+    drawGrid(roomInfo.map((x) => x.toString()));
+    (document.getElementById("canvas1") as HTMLCanvasElement).style.cursor =
+      hoveredRoom !== -1 ? "pointer" : "default";
+  }
+}
+
+function mouseLeave(): void {
+  if (hoveredRoom !== -1) {
+    hoveredRoom = -1;
+    if (status == 1) drawGrid(roomInfo.map((x) => x.toString()));
+    (document.getElementById("canvas1") as HTMLCanvasElement).style.cursor =
+      "default";
+  }
 }
 
 for (var i = 0; i < 200; i++) {
@@ -99,8 +125,17 @@ function drawGrid(txtArray: string[]): void {
   for (var i = 0; i < txtArray.length; i++) {
     var ox = (i % 4) * 125 + 25;
     var oy = Math.floor(i / 4) * 125 + 125;
+    const isHovered = i === hoveredRoom;
+    context.fillStyle = isHovered ? "#2563eb" : "black";
     context.fillRect(ox, oy, 75, 75);
-    context.clearRect(ox + 5, oy + 5, 65, 65);
+    if (isHovered) {
+      context.fillStyle = "#2563eb";
+      context.fillRect(ox + 5, oy + 5, 65, 65);
+      context.fillStyle = "white";
+    } else {
+      context.clearRect(ox + 5, oy + 5, 65, 65);
+      context.fillStyle = "black";
+    }
     context.fillText("play", ox + 38, oy + 38);
   }
 }
