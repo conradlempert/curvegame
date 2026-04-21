@@ -10,11 +10,7 @@ import {
 } from "./game/room";
 import Config from "../config";
 
-const socket: Socket = import.meta.env.PROD
-  ? // production, port of frontend and backend is the same
-    io()
-  : // development, port of frontend and backend is different
-    io(":" + Config.serverPort);
+const socket: Socket = io();
 
 let status: number = 0;
 let roomInfo: IRoomsOverviewInfo;
