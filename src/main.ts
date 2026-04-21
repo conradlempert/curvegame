@@ -121,6 +121,9 @@ socket.on("joinRoomSuccess", function (msg: IJoinedRoomSuccessInfo): void {
   room = msg.roomNumber;
   localID = msg.localID;
   console.log("localID: " + localID);
+  for (var i = 0; i <= localID; i++) {
+    if (!localPlayersLines[i]) localPlayersLines[i] = [];
+  }
   goInGame();
 });
 socket.on("roomReset", function (): void {
