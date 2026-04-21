@@ -74,6 +74,12 @@ export default class Room {
 
   public resetRoom(): void {
     this.lines = this.players.map(() => new Array());
+    // Also reset server-side player positions so stale death positions don't
+    // immediately re-trigger collisions on the next tick before clients have
+    // had time to send updates for the new round.
+    for (const p of this.players) {
+      p.placeAtRandomPosition();
+    }
   }
 
   private getRelevantLines(playerIndex: number): ILine[] {
