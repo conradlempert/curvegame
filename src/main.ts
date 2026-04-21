@@ -287,6 +287,10 @@ socket.on("giveRoomInfo", function (serverPlayers: IShortRoomInfo): void {
 
 socket.on("giveFullInfo", function (serverLines: IFullRoomInfo): void {
   for (var i = 0; i < serverLines.length; i++) {
+    // Skip the local player: we already extend our own line every tick
+    // client-side. Overwriting it with the server's slightly stale snapshot
+    // causes a visible gap behind the head that jumps forward each sync.
+    if (i === localID) continue;
     localPlayersLines[i] = serverLines[i];
   }
 });
