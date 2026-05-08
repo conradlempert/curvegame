@@ -12,7 +12,7 @@ const LOOKAHEAD = TURN_RADIUS * 3; // 120px — three full turning radii
 const RAY_STEP = Config.drivingSpeed;
 
 // Number of rays spread across each zone
-const RAYS_PER_ZONE = 5;
+const RAYS_PER_ZONE: number = 5;
 
 // Angular boundaries relative to current heading (radians).
 // ZONE_INNER separates the middle zone from the side zones.
