@@ -4,8 +4,9 @@ import { ILine } from "./player";
 // Turning radius (px): how wide a circle the CPU traces at full lock
 const TURN_RADIUS = Config.drivingSpeed / Config.turningSpeed; // 40px
 
-// How far ahead each ray marches
-const LOOKAHEAD = TURN_RADIUS * 2; // 80px — two full turning radii
+// How far ahead each ray marches — needs to be ≥ the turning radius so the CPU
+// has enough room to complete a 90° turn before reaching a wall it's charging at.
+const LOOKAHEAD = TURN_RADIUS * 3; // 120px — three full turning radii
 
 // Step size per ray iteration matches actual movement speed
 const RAY_STEP = Config.drivingSpeed;
@@ -114,12 +115,14 @@ export function cpuSteering(
   // Panic level: if the safest zone is already this dangerous, we're close to something
   // real and should steer decisively without waiting for a big relative margin.
   const steps = Math.ceil(LOOKAHEAD / RAY_STEP);
-  const PANIC_LEVEL = DANGER_CAP * steps * RAYS_PER_ZONE * 0.15;
+  // Panic triggers when even the safest zone is noticeably hot — i.e. the CPU
+  // is already within the danger field and must react without hesitation.
+  const PANIC_LEVEL = DANGER_CAP * steps * RAYS_PER_ZONE * 0.08;
   const inDanger = minDanger > PANIC_LEVEL;
 
-  // In calm open space use a conservative threshold to suppress jitter.
-  // When genuinely close to danger, steer to the safest zone unconditionally.
-  if (!inDanger && midDanger <= minDanger * 1.2) return 0;
+  // In calm open space require a 10% margin to suppress jitter.
+  // When in danger, steer to the safest zone unconditionally.
+  if (!inDanger && midDanger <= minDanger * 1.1) return 0;
 
   if (leftDanger  === minDanger) return -1;
   return 1;
