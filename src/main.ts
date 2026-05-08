@@ -413,6 +413,9 @@ function renderScoreboard(): void {
 renderScoreboard();
 
 function computeOtherPlayer(nr: number): void {
+  if (!localPlayersInfo[nr]) return;
+  if (!localPlayersLines[nr]) localPlayersLines[nr] = [];
+
   if (localPlayersInfo[nr].steering == 1) {
     localPlayersInfo[nr].angle += Config.turningSpeed;
   }
