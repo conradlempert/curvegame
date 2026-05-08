@@ -40,13 +40,6 @@ export default class Player {
     this.placeAtRandomPosition();
   }
 
-  // Stub for CPU steering logic. Receives the current player index and all
-  // lines so future implementations can make informed decisions.
-  // Returns a steering direction: -1 (left), 0 (straight), or 1 (right).
-  public static cpuSteering(_cpuIndex: number, _lines: ILine[]): number {
-    return 0;
-  }
-
   public placeAtRandomPosition(): void {
     const min = Config.spawnPadding;
     const max = Config.gameSize - Config.spawnPadding;
