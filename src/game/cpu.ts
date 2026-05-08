@@ -64,9 +64,12 @@ function scanRay(
 
     danger += wallDanger(x, y);
 
-    const nearThresh = Config.collisionDistance * 4;
-    const nearThresh2 = nearThresh * nearThresh;
-    const collide2 = Config.collisionDistance * Config.collisionDistance;
+    // Sense line points up to this distance
+    const senseRange = Config.collisionDistance * 8;
+    const senseRange2 = senseRange * senseRange;
+    // Coefficient so that at exactly collisionDistance the penalty ≈ 2000,
+    // then rises as an inverse square as the point gets closer.
+    const A = 2000 * Config.collisionDistance * Config.collisionDistance;
 
     for (let li = 0; li < lines.length; li++) {
       const line = lines[li];
@@ -80,10 +83,9 @@ function scanRay(
         const dx = line[pi][0] - x;
         const dy = line[pi][1] - y;
         const dist2 = dx * dx + dy * dy;
-        if (dist2 < collide2) {
-          danger += 2000;
-        } else if (dist2 < nearThresh2) {
-          danger += 50;
+        if (dist2 < senseRange2) {
+          // Inverse-square penalty: spikes hard when very close, fades quickly at range
+          danger += Math.min(A / Math.max(dist2, 1), 4000);
         }
       }
     }
