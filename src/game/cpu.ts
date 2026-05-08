@@ -20,30 +20,16 @@ const RAYS_PER_ZONE = 5;
 const ZONE_INNER = Math.atan(TURN_RADIUS / 2 / LOOKAHEAD); // ~0.32 rad (~18°)
 const ZONE_OUTER = ZONE_INNER * 3;                          // ~0.97 rad (~55°)
 
-function wallDanger(x: number, y: number): number {
-  const distX = Math.min(x, Config.gameSize - x);
-  const distY = Math.min(y, Config.gameSize - y);
-  const dist  = Math.min(distX, distY);
+// Inverse-square danger coefficient: at exactly collisionDistance, penalty = DANGER_CAP.
+const DANGER_CAP = 4000;
+const A = DANGER_CAP * Config.collisionDistance * Config.collisionDistance;
 
-  let danger = 0;
-  if (dist < 0) return 10000;
-  if (dist < Config.collisionDistance) {
-    danger += 2000;
-  } else if (dist < TURN_RADIUS) {
-    danger += ((TURN_RADIUS - dist) / TURN_RADIUS) * 300;
-  }
+// Sense line points within this radius.
+const SENSE_RANGE  = Config.collisionDistance * 8;
+const SENSE_RANGE2 = SENSE_RANGE * SENSE_RANGE;
 
-  // Corner penalty: multiplicative when both axes are close to a wall.
-  // This makes corners far more dangerous than a flat wall so the CPU
-  // commits to turning away instead of wiggling between two equal sides.
-  const cornerRange = TURN_RADIUS * 2.5;
-  if (distX < cornerRange && distY < cornerRange) {
-    const fx = Math.max(0, 1 - distX / cornerRange);
-    const fy = Math.max(0, 1 - distY / cornerRange);
-    danger += fx * fy * 1500;
-  }
-
-  return danger;
+function invSq(dist2: number): number {
+  return Math.min(A / Math.max(dist2, 1), DANGER_CAP);
 }
 
 function scanRay(
@@ -62,14 +48,13 @@ function scanRay(
     x += Math.cos(angle) * RAY_STEP;
     y += Math.sin(angle) * RAY_STEP;
 
-    danger += wallDanger(x, y);
-
-    // Sense line points up to this distance
-    const senseRange = Config.collisionDistance * 8;
-    const senseRange2 = senseRange * senseRange;
-    // Coefficient so that at exactly collisionDistance the penalty ≈ 2000,
-    // then rises as an inverse square as the point gets closer.
-    const A = 2000 * Config.collisionDistance * Config.collisionDistance;
+    // Treat each wall as a virtual obstacle using the same inverse-square formula.
+    // X-axis walls (left/right) and Y-axis walls (top/bottom) are scored separately
+    // so corners naturally accumulate danger from both axes at once.
+    const distX = Math.min(x, Config.gameSize - x);
+    const distY = Math.min(y, Config.gameSize - y);
+    danger += invSq(distX * distX);
+    danger += invSq(distY * distY);
 
     for (let li = 0; li < lines.length; li++) {
       const line = lines[li];
@@ -83,9 +68,8 @@ function scanRay(
         const dx = line[pi][0] - x;
         const dy = line[pi][1] - y;
         const dist2 = dx * dx + dy * dy;
-        if (dist2 < senseRange2) {
-          // Inverse-square penalty: spikes hard when very close, fades quickly at range
-          danger += Math.min(A / Math.max(dist2, 1), 4000);
+        if (dist2 < SENSE_RANGE2) {
+          danger += invSq(dist2);
         }
       }
     }
