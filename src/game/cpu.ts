@@ -21,11 +21,29 @@ const ZONE_INNER = Math.atan(TURN_RADIUS / 2 / LOOKAHEAD); // ~0.32 rad (~18°)
 const ZONE_OUTER = ZONE_INNER * 3;                          // ~0.97 rad (~55°)
 
 function wallDanger(x: number, y: number): number {
-  const dist = Math.min(x, y, Config.gameSize - x, Config.gameSize - y);
+  const distX = Math.min(x, Config.gameSize - x);
+  const distY = Math.min(y, Config.gameSize - y);
+  const dist  = Math.min(distX, distY);
+
+  let danger = 0;
   if (dist < 0) return 10000;
-  if (dist < Config.collisionDistance) return 2000;
-  if (dist < TURN_RADIUS) return ((TURN_RADIUS - dist) / TURN_RADIUS) * 300;
-  return 0;
+  if (dist < Config.collisionDistance) {
+    danger += 2000;
+  } else if (dist < TURN_RADIUS) {
+    danger += ((TURN_RADIUS - dist) / TURN_RADIUS) * 300;
+  }
+
+  // Corner penalty: multiplicative when both axes are close to a wall.
+  // This makes corners far more dangerous than a flat wall so the CPU
+  // commits to turning away instead of wiggling between two equal sides.
+  const cornerRange = TURN_RADIUS * 2.5;
+  if (distX < cornerRange && distY < cornerRange) {
+    const fx = Math.max(0, 1 - distX / cornerRange);
+    const fy = Math.max(0, 1 - distY / cornerRange);
+    danger += fx * fy * 1500;
+  }
+
+  return danger;
 }
 
 function scanRay(
