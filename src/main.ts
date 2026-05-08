@@ -31,6 +31,13 @@ function playerColor(index: number, lightness: number = 45): string {
   return `hsl(${hue}, 70%, ${lightness}%)`;
 }
 
+function drawDot(x: number, y: number, radius: number, color: string): void {
+  context.fillStyle = color;
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
+}
+
 function initCanvas() {
   var canvas = document.getElementById("canvas1") as HTMLCanvasElement;
   canvas.addEventListener("click", click);
@@ -248,26 +255,18 @@ function tick(): void {
   thisPlayer.x += vectorFromAngle(thisPlayer.angle)[0] * Config.drivingSpeed;
   thisPlayer.y += vectorFromAngle(thisPlayer.angle)[1] * Config.drivingSpeed;
   localPlayersLines[localID].push([thisPlayer.x, thisPlayer.y]);
-  context.fillStyle = playerColor(localID);
-  context.fillRect(
-    thisPlayer.x,
-    thisPlayer.y,
-    Config.playerHeadSize,
-    Config.playerHeadSize
-  );
+  const r = Config.playerHeadSize / 2;
 
   // draw the lines of all players
   for (var p = 0; p < localPlayersLines.length; p++) {
-    context.fillStyle = playerColor(p);
+    const color = playerColor(p);
     for (var i = 0; i < localPlayersLines[p].length; i++) {
-      context.fillRect(
-        localPlayersLines[p][i][0],
-        localPlayersLines[p][i][1],
-        Config.playerHeadSize,
-        Config.playerHeadSize
-      );
+      drawDot(localPlayersLines[p][i][0], localPlayersLines[p][i][1], r, color);
     }
   }
+
+  // draw own head on top
+  drawDot(thisPlayer.x, thisPlayer.y, r, playerColor(localID));
 
   // compute the position of all other players
   for (var i = 0; i < localPlayersInfo.length; i++) {
@@ -425,8 +424,7 @@ function computeOtherPlayer(nr: number): void {
     vectorFromAngle(localPlayersInfo[nr].angle)[1] * Config.drivingSpeed;
   localPlayersLines[nr].push([localPlayersInfo[nr].x, localPlayersInfo[nr].y]);
 
-  context.fillStyle = playerColor(nr);
-  context.fillRect(localPlayersInfo[nr].x, localPlayersInfo[nr].y, 5, 5);
+  drawDot(localPlayersInfo[nr].x, localPlayersInfo[nr].y, Config.playerHeadSize / 2, playerColor(nr));
 }
 
 document.body.onkeydown = function (event: KeyboardEvent): void {
