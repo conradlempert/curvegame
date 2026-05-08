@@ -5,7 +5,7 @@ import { ILine } from "./player";
 const TURN_RADIUS = Config.drivingSpeed / Config.turningSpeed; // 40px
 
 // How far ahead each ray marches
-const LOOKAHEAD = TURN_RADIUS * 1.5; // 60px
+const LOOKAHEAD = TURN_RADIUS * 2; // 80px — two full turning radii
 
 // Step size per ray iteration matches actual movement speed
 const RAY_STEP = Config.drivingSpeed;
@@ -111,10 +111,15 @@ export function cpuSteering(
 
   const minDanger = Math.min(leftDanger, midDanger, rightDanger);
 
-  // Only steer if the middle zone is meaningfully worse than the best alternative.
-  // This prevents jittery micro-corrections when all zones are similarly safe.
-  const STEER_THRESHOLD = 1.2;
-  if (midDanger <= minDanger * STEER_THRESHOLD) return 0;
+  // Panic level: if the safest zone is already this dangerous, we're close to something
+  // real and should steer decisively without waiting for a big relative margin.
+  const steps = Math.ceil(LOOKAHEAD / RAY_STEP);
+  const PANIC_LEVEL = DANGER_CAP * steps * RAYS_PER_ZONE * 0.15;
+  const inDanger = minDanger > PANIC_LEVEL;
+
+  // In calm open space use a conservative threshold to suppress jitter.
+  // When genuinely close to danger, steer to the safest zone unconditionally.
+  if (!inDanger && midDanger <= minDanger * 1.2) return 0;
 
   if (leftDanger  === minDanger) return -1;
   return 1;
