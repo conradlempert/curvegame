@@ -1,6 +1,6 @@
 import Config from "../../config";
 import Player, { ILine, IPlayerData } from "./player";
-import { cpuSteeringGenetic } from "./cpu_grid";
+import { cpuSteering } from "./cpu";
 
 export type IRoomsOverviewRequest = "";
 export type IRoomsOverviewInfo = number[];
@@ -90,7 +90,7 @@ export default class Room {
     if (this.cpuIndex === null) return;
     const cpu = this.players[this.cpuIndex];
     if (cpu.disconnected) return;
-    const steering = cpuSteeringGenetic(cpu.x, cpu.y, cpu.angle, this.lines, this.cpuIndex);
+    const steering = cpuSteering(cpu.x, cpu.y, cpu.angle, this.lines, this.cpuIndex);
     cpu.angle += steering * Config.turningSpeed;
     cpu.x += Math.cos(cpu.angle) * Config.drivingSpeed;
     cpu.y += Math.sin(cpu.angle) * Config.drivingSpeed;
