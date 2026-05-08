@@ -3,6 +3,7 @@ import { io, Socket } from "socket.io-client";
 import Player, { ILine, IPlayerPositionUpdate } from "./game/player";
 import {
   IFullRoomInfo,
+  IGameOverInfo,
   IJoinedRoomSuccessInfo,
   IJoinRoomInfo,
   IRoomResetInfo,
@@ -233,6 +234,7 @@ function startTickLoop(intervalMs: number): void {
 }
 
 function tick(): void {
+  if (status !== 2) return;
   context.clearRect(0, 0, Config.gameSize, Config.gameSize);
   thisPlayer.steering = 0;
   if (keys[37]) {
@@ -308,6 +310,85 @@ socket.on("scoresUpdate", function (msg: IScoresInfo): void {
   scores = msg;
   renderScoreboard();
 });
+
+socket.on("gameOver", function (msg: IGameOverInfo): void {
+  status = 3;
+  scores = msg.scores;
+  renderScoreboard();
+  drawGameOverScreen(msg);
+  const btn = document.getElementById("btnMenu");
+  if (btn) btn.textContent = "← Main Menu";
+});
+
+function drawGameOverScreen(msg: IGameOverInfo): void {
+  const w = Config.gameSize;
+  const h = Config.gameSize;
+  context.clearRect(0, 0, w, h);
+
+  // Background
+  context.fillStyle = "#f9fafb";
+  context.fillRect(0, 0, w, h);
+
+  // Title
+  context.fillStyle = "#111";
+  context.font = "bold 52px sans-serif";
+  context.textAlign = "center";
+  context.fillText("Game Over", w / 2, 80);
+
+  // Winner banner
+  const winnerColor = playerColor(msg.winnerIndex);
+  const winnerLabel =
+    msg.winnerIndex === localID ? "You win! 🎉" : `Player ${msg.winnerIndex + 1} wins!`;
+  context.fillStyle = winnerColor;
+  context.fillRect(60, 100, w - 120, 60);
+  context.fillStyle = "white";
+  context.font = "bold 28px sans-serif";
+  context.fillText(winnerLabel, w / 2, 140);
+
+  // Sorted scores table
+  const sorted = msg.scores
+    .map((s, i) => ({ score: s, index: i }))
+    .sort((a, b) => b.score - a.score);
+
+  const rowH = 52;
+  const tableTop = 185;
+  sorted.forEach(({ score, index }, rank) => {
+    const y = tableTop + rank * rowH;
+    const isYou = index === localID;
+    const isWinner = index === msg.winnerIndex;
+
+    context.fillStyle = isWinner ? playerColor(index, 85) : isYou ? "#dbeafe" : "#f3f4f6";
+    context.fillRect(60, y, w - 120, rowH - 6);
+
+    // Color swatch
+    context.fillStyle = playerColor(index);
+    context.fillRect(68, y + 8, 24, 36);
+
+    // Rank
+    context.fillStyle = "#555";
+    context.font = "bold 20px sans-serif";
+    context.textAlign = "left";
+    context.fillText(`#${rank + 1}`, 102, y + 32);
+
+    // Name
+    const name = isYou ? `Player ${index + 1} (you)` : `Player ${index + 1}`;
+    context.fillStyle = "#111";
+    context.font = isYou ? "bold 22px sans-serif" : "22px sans-serif";
+    context.fillText(name, 150, y + 32);
+
+    // Score
+    context.fillStyle = playerColor(index);
+    context.font = "bold 22px sans-serif";
+    context.textAlign = "right";
+    context.fillText(`${score} pts`, w - 68, y + 32);
+  });
+
+  // Instruction
+  context.fillStyle = "#888";
+  context.font = "18px sans-serif";
+  context.textAlign = "center";
+  context.fillText('Use "← Menu" above to play again', w / 2, h - 24);
+}
 
 function renderScoreboard(): void {
   const el = document.getElementById("scoreboard");

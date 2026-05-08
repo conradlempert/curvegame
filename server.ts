@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io";
 import Config from "./config";
 import Room, {
   IFullRoomInfo,
+  IGameOverInfo,
   IJoinedRoomSuccessInfo,
   IJoinRoomInfo,
   IRoomsOverviewInfo,
@@ -64,21 +65,27 @@ io.on("connection", function (socket: Socket): void {
     socket.emit("resInfo", roomsOverviewInfo);
   });
   socket.on("joinRoom", function (msg: IJoinRoomInfo): void {
+    const rm = rooms[msg.roomNumber];
+    // Reset room if game is over or no active players remain from last session
+    if (rm.gameOver || rm.activePlayers === 0) {
+      rm.fullReset();
+      console.log("Room " + msg.roomNumber + " reset for new session");
+    }
     socket.join("room" + msg.roomNumber);
-    rooms[msg.roomNumber].players.push(Player.fromData(msg.playerData));
-    rooms[msg.roomNumber].lines.push(new Array());
-    rooms[msg.roomNumber].scores.push(0);
-    const localID = rooms[msg.roomNumber].players.length - 1;
+    rm.players.push(Player.fromData(msg.playerData));
+    rm.lines.push(new Array());
+    rm.scores.push(0);
+    const localID = rm.players.length - 1;
     socketToPlayer.set(socket.id, { room: msg.roomNumber, localID });
     console.log("A player joined Room " + msg.roomNumber);
-    rooms[msg.roomNumber].active = true;
+    rm.active = true;
     const info: IJoinedRoomSuccessInfo = {
       roomNumber: msg.roomNumber,
       localID,
       round: rooms[msg.roomNumber].round,
     };
     socket.emit("joinRoomSuccess", info);
-    io.to("room" + msg.roomNumber).emit("scoresUpdate", rooms[msg.roomNumber].scores);
+    io.to("room" + msg.roomNumber).emit("scoresUpdate", rm.scores);
   });
   socket.on("disconnect", function (): void {
     const entry = socketToPlayer.get(socket.id);
@@ -90,13 +97,8 @@ io.on("connection", function (socket: Socket): void {
     room.players[localID].disconnected = true;
     room.lines[localID] = [];
     console.log(`Player ${localID} disconnected from Room ${roomNr}`);
-    if (room.activePlayers === 0) {
-      // All players gone — fully reset the room for the next session
-      room.players = [];
-      room.lines = [];
-      room.scores = [];
-      room.active = false;
-      room.round = 0;
+    if (room.activePlayers === 0 && !room.gameOver) {
+      room.fullReset();
       console.log(`Room ${roomNr} emptied and reset`);
     }
   });
@@ -118,14 +120,23 @@ io.on("connection", function (socket: Socket): void {
 
 function giveRoomInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
-    if (rooms[i].active) {
+    if (rooms[i].active && !rooms[i].gameOver) {
       const dead = rooms[i].computeCollisions();
       if (dead.length > 0) {
         rooms[i].awardPointsForDeaths(dead);
-        rooms[i].resetRoom();
-        rooms[i].round += 1;
-        io.to("room" + i).emit("scoresUpdate", rooms[i].scores);
-        io.to("room" + i).emit("roomReset", { round: rooms[i].round });
+        if (rooms[i].hasWinner()) {
+          rooms[i].gameOver = true;
+          const info: IGameOverInfo = {
+            scores: rooms[i].scores,
+            winnerIndex: rooms[i].winnerIndex(),
+          };
+          io.to("room" + i).emit("gameOver", info);
+        } else {
+          rooms[i].resetRoom();
+          rooms[i].round += 1;
+          io.to("room" + i).emit("scoresUpdate", rooms[i].scores);
+          io.to("room" + i).emit("roomReset", { round: rooms[i].round });
+        }
       }
       const info: IShortRoomInfo = rooms[i].players;
       io.to("room" + i).emit("giveRoomInfo", info);

@@ -19,9 +19,16 @@ export interface IRoomResetInfo {
   round: number;
 }
 
+export interface IGameOverInfo {
+  scores: number[];
+  winnerIndex: number;
+}
+
 export type IShortRoomInfo = Player[];
 export type IFullRoomInfo = ILine[];
 export type IScoresInfo = number[];
+
+export const WINNING_SCORE = 10;
 
 export default class Room {
   nr: number;
@@ -31,6 +38,7 @@ export default class Room {
   playerCount: number;
   active: boolean;
   round: number;
+  gameOver: boolean;
 
   constructor(nr: number) {
     this.nr = nr;
@@ -40,6 +48,28 @@ export default class Room {
     this.playerCount = 0;
     this.active = false;
     this.round = 0;
+    this.gameOver = false;
+  }
+
+  public hasWinner(): boolean {
+    return this.scores.some((s) => s >= WINNING_SCORE);
+  }
+
+  public winnerIndex(): number {
+    let best = -1;
+    for (let i = 0; i < this.scores.length; i++) {
+      if (best === -1 || this.scores[i] > this.scores[best]) best = i;
+    }
+    return best;
+  }
+
+  public fullReset(): void {
+    this.players = [];
+    this.lines = [];
+    this.scores = [];
+    this.active = false;
+    this.round = 0;
+    this.gameOver = false;
   }
 
   public computeCollisions(): number[] {
