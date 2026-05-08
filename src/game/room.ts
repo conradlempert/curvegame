@@ -45,6 +45,7 @@ export default class Room {
   public computeCollisions(): number[] {
     const dead: number[] = [];
     for (var i = 0; i < this.players.length; i++) {
+      if (this.players[i].disconnected) continue;
       if (
         this.players[i].x < 0 ||
         this.players[i].x > Config.gameSize ||
@@ -60,6 +61,10 @@ export default class Room {
       }
     }
     return dead;
+  }
+
+  public get activePlayers(): number {
+    return this.players.filter((p) => !p.disconnected).length;
   }
 
   public awardPointsForDeaths(dead: number[]): void {

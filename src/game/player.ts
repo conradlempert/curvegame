@@ -26,6 +26,7 @@ export default class Player {
   angle: number;
   steering: number;
   active: boolean;
+  disconnected: boolean;
 
   constructor() {
     this.x = 0;
@@ -33,6 +34,7 @@ export default class Player {
     this.angle = 0;
     this.steering = 0;
     this.active = false;
+    this.disconnected = false;
     this.placeAtRandomPosition();
   }
 

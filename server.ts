@@ -17,6 +17,7 @@ const app = express();
 const rooms: Room[] = [];
 const server = app.listen(Config.serverPort, serverStarted);
 const io = new Server(server, { cors: { origin: "*" } });
+const socketToPlayer = new Map<string, { room: number; localID: number }>();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -67,15 +68,37 @@ io.on("connection", function (socket: Socket): void {
     rooms[msg.roomNumber].players.push(Player.fromData(msg.playerData));
     rooms[msg.roomNumber].lines.push(new Array());
     rooms[msg.roomNumber].scores.push(0);
+    const localID = rooms[msg.roomNumber].players.length - 1;
+    socketToPlayer.set(socket.id, { room: msg.roomNumber, localID });
     console.log("A player joined Room " + msg.roomNumber);
     rooms[msg.roomNumber].active = true;
     const info: IJoinedRoomSuccessInfo = {
       roomNumber: msg.roomNumber,
-      localID: rooms[msg.roomNumber].players.length - 1,
+      localID,
       round: rooms[msg.roomNumber].round,
     };
     socket.emit("joinRoomSuccess", info);
     io.to("room" + msg.roomNumber).emit("scoresUpdate", rooms[msg.roomNumber].scores);
+  });
+  socket.on("disconnect", function (): void {
+    const entry = socketToPlayer.get(socket.id);
+    if (!entry) return;
+    socketToPlayer.delete(socket.id);
+    const { room: roomNr, localID } = entry;
+    const room = rooms[roomNr];
+    if (!room) return;
+    room.players[localID].disconnected = true;
+    room.lines[localID] = [];
+    console.log(`Player ${localID} disconnected from Room ${roomNr}`);
+    if (room.activePlayers === 0) {
+      // All players gone — fully reset the room for the next session
+      room.players = [];
+      room.lines = [];
+      room.scores = [];
+      room.active = false;
+      room.round = 0;
+      console.log(`Room ${roomNr} emptied and reset`);
+    }
   });
   socket.on(
     "playerPositionUpdate",
