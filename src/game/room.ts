@@ -100,8 +100,19 @@ export default class Room {
   public awardPointsForDeaths(dead: number[]): void {
     if (dead.length === 0) return;
     const deadSet = new Set(dead);
-    for (var i = 0; i < this.players.length; i++) {
-      if (!deadSet.has(i)) {
+    const survivors = this.players.filter(
+      (p, i) => !p.disconnected && !deadSet.has(i)
+    );
+    if (survivors.length > 0) {
+      // Normal case: survivors earn a point
+      for (var i = 0; i < this.players.length; i++) {
+        if (!this.players[i].disconnected && !deadSet.has(i)) {
+          this.scores[i] = (this.scores[i] || 0) + 1;
+        }
+      }
+    } else {
+      // Solo or everyone-dies case: the dead player(s) earn a point each
+      for (const i of dead) {
         this.scores[i] = (this.scores[i] || 0) + 1;
       }
     }
