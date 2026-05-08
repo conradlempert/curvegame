@@ -51,8 +51,9 @@ function scanRay(
     // Treat each wall as a virtual obstacle using the same inverse-square formula.
     // X-axis walls (left/right) and Y-axis walls (top/bottom) are scored separately
     // so corners naturally accumulate danger from both axes at once.
-    const distX = Math.min(x, Config.gameSize - x);
-    const distY = Math.min(y, Config.gameSize - y);
+    // Clamp to 0 so rays that cross outside the arena register max danger, not near-zero.
+    const distX = Math.max(0, Math.min(x, Config.gameSize - x));
+    const distY = Math.max(0, Math.min(y, Config.gameSize - y));
     danger += invSq(distX * distX);
     danger += invSq(distY * distY);
 
@@ -110,11 +111,11 @@ export function cpuSteering(
 
   const minDanger = Math.min(leftDanger, midDanger, rightDanger);
 
-  // Prefer straight when multiple zones tie for safest
-  const tieCount = [leftDanger, midDanger, rightDanger].filter(d => d === minDanger).length;
-  if (tieCount > 1) return 0;
+  // Only steer if the middle zone is meaningfully worse than the best alternative.
+  // This prevents jittery micro-corrections when all zones are similarly safe.
+  const STEER_THRESHOLD = 1.2;
+  if (midDanger <= minDanger * STEER_THRESHOLD) return 0;
 
-  if (midDanger   === minDanger) return 0;
   if (leftDanger  === minDanger) return -1;
   return 1;
 }
