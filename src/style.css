@@ -15,6 +15,28 @@ body {
   gap: 16px;
   padding: 20px 0;
 }
+.top-bar {
+  width: 500px;
+  max-width: 100%;
+  display: none;
+}
+.top-bar.visible {
+  display: block;
+}
+.menu-btn {
+  background: white;
+  border: none;
+  border-radius: 6px;
+  box-shadow: 0px 0px 10px 0px #000000;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #111;
+}
+.menu-btn:hover {
+  background: #f0f0f0;
+}
 .canvas-container {
   display: flex;
   justify-content: center;

@@ -208,8 +208,13 @@ socket.on("roomReset", function (msg: IRoomResetInfo): void {
 });
 function goInGame(): void {
   context.clearRect(0, 0, Config.gameSize, Config.gameSize);
+  document.getElementById("topBar")?.classList.add("visible");
   startTickLoop(20);
 }
+
+document.getElementById("btnMenu")?.addEventListener("click", () => {
+  location.reload();
+});
 
 function startTickLoop(intervalMs: number): void {
   // Browsers throttle setInterval/setTimeout in background tabs (down to ~1Hz),
