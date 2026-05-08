@@ -39,6 +39,7 @@ export default class Room {
   active: boolean;
   round: number;
   gameOver: boolean;
+  cpuIndex: number | null;
 
   constructor(nr: number) {
     this.nr = nr;
@@ -49,6 +50,7 @@ export default class Room {
     this.active = false;
     this.round = 0;
     this.gameOver = false;
+    this.cpuIndex = null;
   }
 
   public hasWinner(): boolean {
@@ -63,6 +65,37 @@ export default class Room {
     return best;
   }
 
+  public get humanPlayers(): number {
+    return this.players.filter((p) => !p.disconnected && !p.isCpu).length;
+  }
+
+  public addCpu(): void {
+    const cpu = new Player();
+    cpu.isCpu = true;
+    this.players.push(cpu);
+    this.lines.push([]);
+    this.scores.push(0);
+    this.cpuIndex = this.players.length - 1;
+  }
+
+  public removeCpu(): void {
+    if (this.cpuIndex === null) return;
+    this.players[this.cpuIndex].disconnected = true;
+    this.lines[this.cpuIndex] = [];
+    this.cpuIndex = null;
+  }
+
+  public tickCpu(): void {
+    if (this.cpuIndex === null) return;
+    const cpu = this.players[this.cpuIndex];
+    if (cpu.disconnected) return;
+    const steering = Player.cpuSteering(this.cpuIndex, this.lines);
+    cpu.angle += steering * Config.turningSpeed;
+    cpu.x += Math.cos(cpu.angle) * Config.drivingSpeed;
+    cpu.y += Math.sin(cpu.angle) * Config.drivingSpeed;
+    this.lines[this.cpuIndex].push([cpu.x, cpu.y]);
+  }
+
   public fullReset(): void {
     this.players = [];
     this.lines = [];
@@ -70,6 +103,7 @@ export default class Room {
     this.active = false;
     this.round = 0;
     this.gameOver = false;
+    this.cpuIndex = null;
   }
 
   public computeCollisions(): number[] {

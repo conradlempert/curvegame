@@ -66,8 +66,8 @@ io.on("connection", function (socket: Socket): void {
   });
   socket.on("joinRoom", function (msg: IJoinRoomInfo): void {
     const rm = rooms[msg.roomNumber];
-    // Reset room if game is over or no active players remain from last session
-    if (rm.gameOver || rm.activePlayers === 0) {
+    // Reset room if game is over or no human players remain from last session
+    if (rm.gameOver || rm.humanPlayers === 0) {
       rm.fullReset();
       console.log("Room " + msg.roomNumber + " reset for new session");
     }
@@ -79,6 +79,14 @@ io.on("connection", function (socket: Socket): void {
     socketToPlayer.set(socket.id, { room: msg.roomNumber, localID });
     console.log("A player joined Room " + msg.roomNumber);
     rm.active = true;
+    // Add CPU when first human joins alone; remove it when a second human joins
+    if (rm.humanPlayers === 1 && rm.cpuIndex === null) {
+      rm.addCpu();
+      console.log("CPU added to Room " + msg.roomNumber);
+    } else if (rm.humanPlayers >= 2 && rm.cpuIndex !== null) {
+      rm.removeCpu();
+      console.log("CPU removed from Room " + msg.roomNumber);
+    }
     const info: IJoinedRoomSuccessInfo = {
       roomNumber: msg.roomNumber,
       localID,
@@ -97,6 +105,11 @@ io.on("connection", function (socket: Socket): void {
     room.players[localID].disconnected = true;
     room.lines[localID] = [];
     console.log(`Player ${localID} disconnected from Room ${roomNr}`);
+    // Remove CPU if no humans remain
+    if (room.humanPlayers === 0 && room.cpuIndex !== null) {
+      room.removeCpu();
+      console.log(`CPU removed from Room ${roomNr} (no humans left)`);
+    }
     if (room.activePlayers === 0 && !room.gameOver) {
       room.fullReset();
       console.log(`Room ${roomNr} emptied and reset`);
@@ -121,6 +134,7 @@ io.on("connection", function (socket: Socket): void {
 function giveRoomInfo(): void {
   for (var i = 0; i < rooms.length; i++) {
     if (rooms[i].active && !rooms[i].gameOver) {
+      rooms[i].tickCpu();
       const dead = rooms[i].computeCollisions();
       if (dead.length > 0) {
         rooms[i].awardPointsForDeaths(dead);

@@ -27,6 +27,7 @@ export default class Player {
   steering: number;
   active: boolean;
   disconnected: boolean;
+  isCpu: boolean;
 
   constructor() {
     this.x = 0;
@@ -35,7 +36,15 @@ export default class Player {
     this.steering = 0;
     this.active = false;
     this.disconnected = false;
+    this.isCpu = false;
     this.placeAtRandomPosition();
+  }
+
+  // Stub for CPU steering logic. Receives the current player index and all
+  // lines so future implementations can make informed decisions.
+  // Returns a steering direction: -1 (left), 0 (straight), or 1 (right).
+  public static cpuSteering(_cpuIndex: number, _lines: ILine[]): number {
+    return 0;
   }
 
   public placeAtRandomPosition(): void {

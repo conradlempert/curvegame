@@ -286,8 +286,10 @@ function tick(): void {
   socket.emit("playerPositionUpdate", playerPositionUpdate);
 }
 
+const isCpuPlayer: boolean[] = [];
 socket.on("giveRoomInfo", function (serverPlayers: IShortRoomInfo): void {
   for (var i = 0; i < serverPlayers.length; i++) {
+    isCpuPlayer[i] = serverPlayers[i].isCpu;
     if (i != localID) {
       localPlayersInfo[i] = serverPlayers[i];
     }
@@ -400,7 +402,7 @@ function renderScoreboard(): void {
   const items = scores
     .map((score, idx) => {
       const isYou = idx === localID;
-      const label = isYou ? `Player ${idx + 1} (you)` : `Player ${idx + 1}`;
+      const label = isCpuPlayer[idx] ? "CPU" : isYou ? `Player ${idx + 1} (you)` : `Player ${idx + 1}`;
       const swatch = `<span class="swatch" style="background:${playerColor(idx)}"></span>`;
       return `<li class="${isYou ? "you" : ""}"><span class="name">${swatch}${label}</span><span>${score}</span></li>`;
     })
