@@ -1,6 +1,6 @@
 import Config from "../../config";
 import Player, { ILine, IPlayerData } from "./player";
-import { cpuSteering } from "./cpu";
+import { cpuSteeringGenetic } from "./cpu_grid";
 
 export type IRoomsOverviewRequest = "";
 export type IRoomsOverviewInfo = number[];
@@ -105,7 +105,11 @@ export default class Room {
     if (now >= this.cpuNextSteeringTime) {
       const t0 = performance.now();
       this.cpuCachedSteering = cpuSteeringGenetic(
-        cpu.x, cpu.y, cpu.angle, this.lines, this.cpuIndex
+        cpu.x,
+        cpu.y,
+        cpu.angle,
+        this.lines,
+        this.cpuIndex,
       );
       const elapsed = performance.now() - t0;
       // Block next recalculation for at least as long as this one took
@@ -159,7 +163,7 @@ export default class Room {
     if (dead.length === 0) return;
     const deadSet = new Set(dead);
     const survivors = this.players.filter(
-      (p, i) => !p.disconnected && !deadSet.has(i)
+      (p, i) => !p.disconnected && !deadSet.has(i),
     );
     if (survivors.length > 0) {
       // Normal case: survivors earn a point
