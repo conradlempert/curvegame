@@ -41,6 +41,8 @@ export default class Room {
   round: number;
   gameOver: boolean;
   cpuIndex: number | null;
+  private cpuCachedSteering: number;
+  private cpuNextSteeringTime: number;
 
   constructor(nr: number) {
     this.nr = nr;
@@ -52,6 +54,8 @@ export default class Room {
     this.round = 0;
     this.gameOver = false;
     this.cpuIndex = null;
+    this.cpuCachedSteering = 0;
+    this.cpuNextSteeringTime = 0;
   }
 
   public hasWinner(): boolean {
@@ -77,6 +81,8 @@ export default class Room {
     this.lines.push([]);
     this.scores.push(0);
     this.cpuIndex = this.players.length - 1;
+    this.cpuCachedSteering = 0;
+    this.cpuNextSteeringTime = 0;
   }
 
   public removeCpu(): void {
@@ -90,8 +96,23 @@ export default class Room {
     if (this.cpuIndex === null) return;
     const cpu = this.players[this.cpuIndex];
     if (cpu.disconnected) return;
-    const steering = cpuSteering(cpu.x, cpu.y, cpu.angle, this.lines, this.cpuIndex);
-    cpu.angle += steering * Config.turningSpeed;
+
+    // Rate-limit the steering algorithm: only recompute when enough wall-clock
+    // time has passed since the last run. This ensures the CPU always moves at
+    // full speed regardless of how long the algorithm takes — it just steers
+    // less frequently when the computation is slow.
+    const now = performance.now();
+    if (now >= this.cpuNextSteeringTime) {
+      const t0 = performance.now();
+      this.cpuCachedSteering = cpuSteeringGenetic(
+        cpu.x, cpu.y, cpu.angle, this.lines, this.cpuIndex
+      );
+      const elapsed = performance.now() - t0;
+      // Block next recalculation for at least as long as this one took
+      this.cpuNextSteeringTime = performance.now() + elapsed;
+    }
+
+    cpu.angle += this.cpuCachedSteering * Config.turningSpeed;
     cpu.x += Math.cos(cpu.angle) * Config.drivingSpeed;
     cpu.y += Math.sin(cpu.angle) * Config.drivingSpeed;
     this.lines[this.cpuIndex].push([cpu.x, cpu.y]);
@@ -105,6 +126,8 @@ export default class Room {
     this.round = 0;
     this.gameOver = false;
     this.cpuIndex = null;
+    this.cpuCachedSteering = 0;
+    this.cpuNextSteeringTime = 0;
   }
 
   public computeCollisions(): number[] {
