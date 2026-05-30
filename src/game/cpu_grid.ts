@@ -40,6 +40,8 @@ function simulateSecond(
   const newPoints: [number, number][] = [];
   let survived = true;
 
+  let mostDangerousDistance = Infinity;
+
   outer: for (let t = 0; t < TICKS_PER_SECOND; t++) {
     angle += steering * Config.turningSpeed;
     x += Math.cos(angle) * Config.drivingSpeed;
@@ -56,7 +58,9 @@ function simulateSecond(
       for (const pt of line) {
         const dx = pt[0] - x;
         const dy = pt[1] - y;
-        if (dx * dx + dy * dy < CD2) { survived = false; break outer; }
+        const distance = dx * dx + dy * dy;
+        mostDangerousDistance = Math.min(mostDangerousDistance, distance);
+        if (distance < CD2) { survived = false; break outer; }
       }
     }
 
@@ -64,7 +68,9 @@ function simulateSecond(
     for (const pt of frozenOwnLine) {
       const dx = pt[0] - x;
       const dy = pt[1] - y;
-      if (dx * dx + dy * dy < CD2) { survived = false; break outer; }
+      const distance = dx * dx + dy * dy;
+      mostDangerousDistance = Math.min(mostDangerousDistance, distance);
+      if (distance < CD2) { survived = false; break outer; }
     }
 
     // Simulation trail accumulated from parent generations (trim the recent tail)
@@ -75,7 +81,9 @@ function simulateSecond(
     for (let pi = 0; pi < parentTrimEnd; pi++) {
       const dx = path.simTrail[pi][0] - x;
       const dy = path.simTrail[pi][1] - y;
-      if (dx * dx + dy * dy < CD2) { survived = false; break outer; }
+      const distance = dx * dx + dy * dy;
+      mostDangerousDistance = Math.min(mostDangerousDistance, distance);
+      if (distance < CD2) { survived = false; break outer; }
     }
 
     // New trail drawn in this generation (trim recent tail the same way)
@@ -86,11 +94,15 @@ function simulateSecond(
     for (let pi = 0; pi < newTrimEnd; pi++) {
       const dx = newPoints[pi][0] - x;
       const dy = newPoints[pi][1] - y;
-      if (dx * dx + dy * dy < CD2) { survived = false; break outer; }
+      const distance = dx * dx + dy * dy;
+      mostDangerousDistance = Math.min(mostDangerousDistance, distance);
+      if (distance < CD2) { survived = false; break outer; }
     }
 
     newPoints.push([x, y]);
   }
+
+  const dangerPenaltyFactor = survived ? (1 - 0.1 * (1500 - mostDangerousDistance) / 1500) : 0.9;
 
   const next: SimPath = {
     x,
@@ -99,7 +111,7 @@ function simulateSecond(
     firstSteering: path.firstSteering,
     // Carry the accumulated trail forward for the next generation's self-collision checks
     simTrail: path.simTrail.concat(newPoints),
-    fitness: path.fitness + newPoints.length,
+    fitness: path.fitness + newPoints.length * dangerPenaltyFactor,
   };
 
   return { survived, next };
